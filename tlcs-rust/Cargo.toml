@@ -1,0 +1,29 @@
+[package]
+name = "tlcs-rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ark-bls12-381 = "0.4.0"
+ark-bn254 = "0.4.0"
+
+ark-ff = "0.4.2"
+ark-std = "0.4.0"
+ark-test-curves = "0.4.2"
+ark-secp256k1 = "0.4.0"
+rand = "0.8.5"
+num-bigint = "0.4.3"
+async-ops = "1.1.0"
+ark-ec = "0.4.2"
+sha2 = "0.10.6"
+ark-poly = "0.4.2"
+criterion = "0.5.1"
+hex = "0.4.3"
+ark-serialize = "0.4.2"
+bit-vec = "0.6.3"
+bitvec = "1.0.1"
+digest = "0.9"
+ark-mnt6-753 = "0.4.0"
+
