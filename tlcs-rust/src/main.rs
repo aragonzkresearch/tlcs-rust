@@ -37,7 +37,7 @@ struct KeyShare<C: ark_ec::CurveGroup, D: ark_ec::CurveGroup> {
     pk_0: Vec<PublicKey<D>>,
     pk_1: Vec<PublicKey<D>>,
     t: Vec<<C as Group>::ScalarField>,
-    first_k_bits    : Vec<<G2 as Group>::ScalarField>,
+    //first_k_bits    : Vec<<G2 as Group>::ScalarField>,
     T_0: Vec<PublicKey<C>>,
     T_1: Vec<PublicKey<C>>,
     y_0: Vec<String>,
@@ -194,20 +194,12 @@ fn main() {
     println!("{:?}",pk_vector_0);
     println!("{:?}",pk_vector_1);
     println!("{:?}",pk_vector_1);
-//    println!("{:?}",t_vector_1);
     println!("{:?}",y_vector_0);
     println!("{:?}",y_vector_1);
     println!("{:?}",T_vector_0);
     println!("{:?}",T_vector_1);
     println!("hash_val: {:?}, {:?}",hash_val, hash_val.len());
-    /*
-    let first_k_bits = hash_val
-        .iter()
-        .take(K_SHARE as usize)
-        .map(|c| c.to_digit(2).unwrap())
-        .collect();
 
-     */
     let first_k_bits : Vec<<G2 as Group>::ScalarField>= hash_val
         .iter()
         .take(K_SHARE as usize)
@@ -219,27 +211,21 @@ fn main() {
         })
         .collect();
 
-    println!("first_k_ones: {}", first_k_bits);
-    /*
-    let mut t_vector: Vec<<G2 as Group>::ScalarField> = Vec::new();
+    let key: KeyShare::<G1,G>{
+        party: party,
+        pk: PublicKey<D>,
+        pk_0: Vec<PublicKey<D>>,
+        pk_1: Vec<PublicKey<D>>,
+        t: Vec<<C as Group>::ScalarField>,
+        T_0: Vec<PublicKey<C>>,
+        T_1: Vec<PublicKey<C>>,
+        y_0: Vec<String>,
+        y_1: Vec<String>
+
+    };
 
 
-    let t:  Vec<<G2 as Group>::ScalarField> = first_k_bits
-        .iter()
-        .enumerate()
-        .map(|(i, val)| match val {
-            fals => t_vector_0[i],
-            true => t_vector_1[i],
-            _ => panic!("Invalid value in c vector"),
-        })
-        .collect();
-
-    println!("t: {:?}",t);
-
-     */
-
-
-
+    println!("first_k_ones: {:?}", first_k_bits);
 
 }
 

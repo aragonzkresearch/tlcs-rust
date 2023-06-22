@@ -24,6 +24,6 @@ hex = "0.4.3"
 ark-serialize = "0.4.2"
 bit-vec = "0.6.3"
 bitvec = "1.0.1"
-digest = "0.9"
+digest = "0.10.7"
 ark-mnt6-753 = "0.4.0"
 
