@@ -42,9 +42,7 @@ struct KeyShare{//<C: ark_ec::CurveGroup, D: ark_ec::CurveGroup> {
     y_0: Vec<Vec<u8>>,
     y_1: Vec<Vec<u8>>,
 }
-
 pub fn key_share_gen( ){
-    println!("HELLO Key Share generation !");
     let party :Party = 123;
     let g = <G as Group>::generator();
     let mut rng = ark_std::test_rng(); // change test for the final version
@@ -74,7 +72,6 @@ pub fn key_share_gen( ){
         let Z_1 = Bls12_381::pairing(hash_L(TIME), PK_L.mul(&t_1));
         t_vector_0.push(t_0);
         t_vector_1.push(t_1);
-        println!("HERE01!");
 
         let sk_ser_0 = seri_compressed_f(&sk_0);
         let sk_ser_1 = seri_compressed_f(&sk_1);
@@ -125,6 +122,16 @@ pub fn key_share_gen( ){
     // println!("T_vector_1 = {:?}", T_vector_1);
     // println!("y_vector_0 = {:?}", y_vector_0);
     // println!("y_vector_0 = {:?}", y_vector_0);
+}
+pub fn key_share_vrfy(key_share: &KeyShare) {
+    let a = key_share.party;
+    let b = key_share.pk_0;
+
+    println!("a : {}",a);
+    println!("b : {}",b);
+    println!("key_share.pk_1 : {:?}",key_share.pk_1);
+
+    /*
 
     for i in 0..K_SHARE{
         if pk_vector_0[i as usize] + pk_vector_1[i as usize] != PK {
@@ -133,10 +140,11 @@ pub fn key_share_gen( ){
             println!("TRUE");
         }
     }
-
     let hash_vrf = hash_2(party,&PK,
                           &pk_vector_0,&pk_vector_1,
                           &T_vector_0,&T_vector_1,
                           &y_vector_0,&y_vector_1);
     println!("hash_vrf = {:?}",hash_vrf);
+
+    */
 }
