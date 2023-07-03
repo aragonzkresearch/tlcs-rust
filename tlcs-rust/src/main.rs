@@ -9,5 +9,7 @@ use key_share::*;
 
 
 fn main(){
-    key_share_gen();
+    let k = key_share_gen();
+    println!("the key = {:?}",k);
+
 }

@@ -31,7 +31,7 @@ const TIME: u128 = 100; // 100 only an example
 
 #[derive(CanonicalSerialize)]
 #[derive(Debug)]
-struct KeyShare{//<C: ark_ec::CurveGroup, D: ark_ec::CurveGroup> {
+pub struct KeyShare{//<C: ark_ec::CurveGroup, D: ark_ec::CurveGroup> {
     party: u64, //this can be considered as the id
     pk: PublicKey<G>,
     pk_0: Vec<PublicKey<G>>,
@@ -42,7 +42,7 @@ struct KeyShare{//<C: ark_ec::CurveGroup, D: ark_ec::CurveGroup> {
     y_0: Vec<Vec<u8>>,
     y_1: Vec<Vec<u8>>,
 }
-pub fn key_share_gen( ){
+pub fn key_share_gen( )-> KeyShare{
     let party :Party = 123;
     let g = <G as Group>::generator();
     let mut rng = ark_std::test_rng(); // change test for the final version
@@ -118,11 +118,24 @@ pub fn key_share_gen( ){
     println!("pk_0 = {:?}", pk_vector_1);
     println!("pk_1 = {:?}", pk_vector_1);
     println!("t = {:?}", t_vector);
+    let key_share: KeyShare = KeyShare{
+        party: party, //this can be considered as the id
+        pk: PK.into(),
+        pk_0: pk_vector_0,
+        pk_1: pk_vector_1,
+        t: t_vector,
+        T_0:  T_vector_0,
+        T_1:  T_vector_1,
+        y_0: y_vector_0,
+        y_1: y_vector_1,
+    };
+    return key_share;
     // println!("T_vector_0 = {:?}", T_vector_0);
     // println!("T_vector_1 = {:?}", T_vector_1);
     // println!("y_vector_0 = {:?}", y_vector_0);
     // println!("y_vector_0 = {:?}", y_vector_0);
 }
+/*
 pub fn key_share_vrfy(key_share: &KeyShare) {
     let a = key_share.party;
     let b = key_share.pk_0;
@@ -147,4 +160,8 @@ pub fn key_share_vrfy(key_share: &KeyShare) {
     println!("hash_vrf = {:?}",hash_vrf);
 
     */
+
+
 }
+
+ */
