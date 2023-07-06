@@ -118,26 +118,8 @@ pub fn key_share_gen( )-> KeyShare{
             _ => panic!("Invalid value in c vector"),
         })
         .collect();
-    println!("Here");
-    /*
-        let key_share = KeyShare{
-            party: party,
-            pk: PK.into(),
-            pk_0: pk_vector_0,
-            pk_1: pk_vector_1,
-            t: first_k_bits,
-            T_0: T_vector_0,
-            T_1: T_vector_1,
-            y_0: y_vector_0,
-            y_1: y_vector_1,
-        };
 
-     */
-    println!("party = {}", party);
-    println!("pk = {}", PK);
-    println!("pk_0 = {:?}", pk_vector_1);
-    println!("pk_1 = {:?}", pk_vector_1);
-    println!("t = {:?}", t_vector);
+
     let key_share: KeyShare = KeyShare{
         party: party, //this can be considered as the id
         pk: PK.into(),
@@ -153,10 +135,7 @@ pub fn key_share_gen( )-> KeyShare{
         sk_1: sk_vector_1,
     };
     return key_share;
-    // println!("T_vector_0 = {:?}", T_vector_0);
-    // println!("T_vector_1 = {:?}", T_vector_1);
-    // println!("y_vector_0 = {:?}", y_vector_0);
-    // println!("y_vector_0 = {:?}", y_vector_0);
+
 }
 
 pub fn sk_vrf( pk: &G, t: &<G2 as Group>::ScalarField , T : &G2, y : &Vec<u8>) -> bool{
