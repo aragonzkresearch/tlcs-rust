@@ -33,6 +33,7 @@ pub fn hash_L(t: u128) -> G1 {
     G1::generator()
 }
 
+
 pub fn hash_1(g_target: PairingOutput<ark_ec::bls12::Bls12<ark_bls12_381::Config>>) -> Vec<u8> {
     let mut uncompressed_bytes = Vec::new();
     g_target
