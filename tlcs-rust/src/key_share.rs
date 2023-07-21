@@ -25,8 +25,9 @@ pub struct Parameters<C: CurveGroup> {
 }
 pub type PublicKey<C> = C;
 pub type SecretKey<C> = <C as Group>::ScalarField;
-pub const K_SHARE: u32 = 2; // 10 is only a example
-pub const TIME: u128 = 100; // 100 only an example
+
+pub const K_SHARE: u32 = 2; 
+pub const TIME: u128 = 100; 
 
 #[derive(CanonicalSerialize)]
 #[derive(Debug)]
@@ -188,6 +189,8 @@ pub fn mpk_aggregation(key_shares : &Vec<KeyShare>) -> G {
     }
     return mpk;
 }
+
+
 pub fn msk_aggregation(sk_t : &G1Affine_L , key_shares : &Vec<KeyShare>) -> F {
     let mut msk = F::zero();
     for i in 0..key_shares.len(){
