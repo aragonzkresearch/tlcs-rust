@@ -1,5 +1,4 @@
 
-
 use crate::primitives::*;
 
 #[allow(unused)]
@@ -43,8 +42,7 @@ pub struct KeyShare{//<C: ark_ec::CurveGroup, D: ark_ec::CurveGroup> {
     pub T_0: Vec<G2>,
     pub T_1: Vec<G2>,
     pub y_0: Vec<Vec<u8>>,
-    pub y_1: Vec<Vec<u8>>,
-   // pub z : Vec<PairingOutput<ark_ec::bls12::Bls12<ark_bls12_381::Config>>>,
+    pub y_1: Vec<Vec<u8>>,   
 }
 
 pub fn key_share_gen( )-> KeyShare{
@@ -71,12 +69,8 @@ pub fn key_share_gen( )-> KeyShare{
     for i in 0..K_SHARE {
         let sk_0 = <G as Group>::ScalarField::rand(&mut rng);
         let sk_1 = &Sk - &sk_0;
-
-
         pk_vector_0.push(g.mul(&sk_0).into());
         pk_vector_1.push(g.mul(&sk_1).into());
-
-
         sk_vector_0.push(sk_0);
         sk_vector_1.push(sk_1);
         let t_0 = <G2 as Group>::ScalarField::rand(&mut rng);
@@ -87,19 +81,12 @@ pub fn key_share_gen( )-> KeyShare{
         let Z_1 = Bls12_381::pairing(hash_L(TIME), PK_L.mul(&t_1));
         t_vector_0.push(t_0);
         t_vector_1.push(t_1);
-
         let sk_ser_0 = seri_compressed_f(&sk_0);
         let sk_ser_1 = seri_compressed_f(&sk_1);
-
-
         let y_0 = xor(&hash_1(Z_0), &sk_ser_0);
         let y_1 = xor(&hash_1(Z_1), &sk_ser_1);
-
-
-
         y_vector_0.push(y_0);
         y_vector_1.push(y_1);
-
 }
 
     let hash_val = hash_2(party,&PK,
@@ -157,13 +144,8 @@ pub fn sk_vrf( pk: &G, t: &<G2 as Group>::ScalarField , T : &G2, y : &Vec<u8>) -
 
 pub fn verf_key_share(k: &KeyShare) -> bool{
     //let k = key_share_gen();
-    //println!("the key = {:?}", k);
     let t = &k.pk_0[0] + &k.pk_1[0];
     let a = &k.pk;
-    //println!("t= {}",t);
-    //println!("a= {}",a);
-    print_type_of(&t);
-    print_type_of(&a);
     let g2 = G2::generator();
 
     for i in 0..K_SHARE{
@@ -208,7 +190,6 @@ pub fn mpk_aggregation(key_shares : &Vec<KeyShare>) -> G {
 }
 pub fn msk_aggregation(sk_t : &G1Affine_L , key_shares : &Vec<KeyShare>) -> F {
     let mut msk = F::zero();
-
     for i in 0..key_shares.len(){
         let Z_0 = Bls12_381::pairing(sk_t, &key_shares[i as usize].T_0[0]);
         let Z_1 = Bls12_381::pairing(sk_t, &key_shares[i as usize].T_1[0]);
