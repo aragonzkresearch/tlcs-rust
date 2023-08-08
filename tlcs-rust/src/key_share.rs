@@ -1,4 +1,5 @@
 use crate::primitives::*;
+use crate::bls_signature::*;
 
 //#[allow(unused)]
 //#[allow(dead_code)]
@@ -134,7 +135,8 @@ pub fn sk_vrf(
         return false
     }
 
-    let z = Bls12_381::pairing(hash_large(TIME), pk_l.mul(t1));
+    
+    let z = Bls12_381::pairing(bls_signature::hash_loe_g1(TIME), pk_l.mul(t1));
     let sk0 = xor(&hash_1(z) , y);
     let sk  = F::deserialize_uncompressed(&*sk0).unwrap();
     if *pk != g.mul(sk){
