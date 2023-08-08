@@ -1,8 +1,10 @@
 mod key_share;
 mod primitives;
 mod drand;
+mod bls_signature;
 
 use key_share::*;
+use bls_signature::*;
 
 #[allow(unused)]
 #[allow(dead_code)]

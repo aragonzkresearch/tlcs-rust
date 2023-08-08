@@ -152,9 +152,3 @@ pub fn seri_uncompressed(s: &F) -> Vec<u8>{
     println!("seri_uncompressed: uncompressed_bytes: {:?}",uncompressed_bytes);
     return uncompressed_bytes;
 }
-
-#[allow(unused)]
-pub fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
-
