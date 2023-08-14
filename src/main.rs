@@ -1,34 +1,29 @@
-mod key_share;
 mod primitives;
-mod drand;
-mod bls_signature;
+mod hashes;
+mod key_share;
 
 use key_share::*;
-use bls_signature::*;
 
-#[allow(unused)]
-#[allow(dead_code)]
 
-#[tokio::main]
-async fn main(){
-    let k = key_share_gen(2);
+fn main() {
+    let k = key_share_gen();
     let b = verf_key_share(&k);
 
     let mut k_vec: Vec<KeyShare> = Vec::new();
     k_vec.push(k);
 
     let mpk = mpk_aggregation(&k_vec);
+    dbg!(mpk);
 
-    //let sk_t = todo!(); // published by the LoE
-
-    //let msk = msk_aggregation(&sk_t , &k_vec);
 }
+
 
 #[cfg(test)]
 mod tests {
     //use serial_test::serial;
 
     use super::*;
+    use key_share::*;
 
     #[test]
     //#[serial]
@@ -44,6 +39,7 @@ mod tests {
     #[test]
     //#[serial]
     fn aggregate_participant_data_works() {
+        //let party :Party = 123; //
         let mut all_participant_data: Vec<KeyShare> = Vec::new();
         let mut participant_data_1 = key_share_gen();
         let mut participant_data_2 = key_share_gen();
@@ -61,7 +57,7 @@ mod tests {
     #[test]
     //#[serial]
     fn make_secret_key_works() {
-        //let mut all_participant_data = key_share_gen(2);
+        let mut all_participant_data = key_share_gen(2);
         //let mut participant_data_2 = key_share_gen(2);
         //all_participant_data.append(&mut participant_data_2);
         let public_key: Vec<u8> = mpk_aggregation(all_participant_data.clone());
@@ -75,3 +71,4 @@ mod tests {
         assert!(vec_secret_key.len() == 32)
     }
 }
+
