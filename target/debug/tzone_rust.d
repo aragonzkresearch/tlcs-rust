@@ -1,0 +1,1 @@
+D:\Aragon\timelockZoneRust\tlcs-rust\tlcs-rust\target\debug\tzone_rust.exe: D:\Aragon\timelockZoneRust\tlcs-rust\tlcs-rust\src\hashes.rs D:\Aragon\timelockZoneRust\tlcs-rust\tlcs-rust\src\key_share.rs D:\Aragon\timelockZoneRust\tlcs-rust\tlcs-rust\src\main.rs D:\Aragon\timelockZoneRust\tlcs-rust\tlcs-rust\src\primitives.rs
