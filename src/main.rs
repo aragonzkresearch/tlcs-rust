@@ -3,6 +3,7 @@ mod hashes;
 mod key_share;
 
 use key_share::*;
+use hashes::*;
 
 
 fn main() {
