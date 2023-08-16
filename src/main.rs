@@ -1,75 +1,146 @@
-mod primitives;
-mod hashes;
-mod key_share;
-
-use key_share::*;
-use hashes::*;
+use primitives::*;
 
 
-fn main() {
-    let k = key_share_gen();
-    let b = verf_key_share(&k);
+//use primitives::*;
+use crate::primitives::*;
 
-    let mut k_vec: Vec<KeyShare> = Vec::new();
-    k_vec.push(k);
+use anyhow::{anyhow, Result};
+use ark_bls12_381::{
+    Bls12_381, g1, g2, Fr as F_L,
+    G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
+    G1Projective as G1Projective_bls, G2Projective as G2Projective_bls,
+};
 
-    let mpk = mpk_aggregation(&k_vec);
-    dbg!(mpk);
+use ark_ec::{
+    //bls12::Bls12,
+    hashing::{curve_maps::wb::WBMap, map_to_curve_hasher::MapToCurveBasedHasher, HashToCurve},
+    models::short_weierstrass,
+    pairing::Pairing,
+    pairing::PairingOutput,
+    AffineRepr, CurveGroup, Group,
+};
+//use ark_bn254::{Fr , G1Affine, G1Projective };
+//use ark_bn254::{Fr, G1Affine, G1Projective};
+use ark_ff::Field;
+use ark_ff::UniformRand;
+use ark_ff::{field_hashers::DefaultFieldHasher, Zero};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
+use ark_std::rand::Rng;
+use hex::ToHex;
+//use sha2::{Digest, Sha256};
+use std::ops::Neg;
+use std::ptr::hash;
+use sha2::{Digest, Sha256};
+use bit_vec::BitVec;
 
+pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
+pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
+
+pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_L {
+    let mapper = MapToCurveBasedHasher::<
+        short_weierstrass::Projective<g1::Config>,
+        DefaultFieldHasher<sha2::Sha256, 128>,
+        WBMap<g1::Config>,
+    >::new(G1_DOMAIN)
+        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G1"))
+        .unwrap();
+    let hash_on_curve = G1Projective_L::from(
+        mapper
+            .hash(msg)
+            .map_err(|_| anyhow!("hash cannot be mapped to G1"))
+            .unwrap(),
+    )
+        .into_affine();
+    return hash_on_curve;
+}
+
+pub fn hash_loe_g2(dst: &[u8], msg: &[u8]) -> G2Affine_L {
+    let mapper = MapToCurveBasedHasher::<
+        short_weierstrass::Projective<g2::Config>,
+        DefaultFieldHasher<sha2::Sha256, 128>,
+        WBMap<g2::Config>,
+    >::new(dst)
+        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
+        .unwrap();
+    let hash_on_curve = G2Projective_L::from(
+        mapper
+            .hash(msg)
+            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
+            .unwrap(),
+    )
+        .into_affine();
+    return hash_on_curve;
 }
 
 
-#[cfg(test)]
-mod tests {
-    //use serial_test::serial;
+pub fn hash_1(
+    g_target: PairingOutput<ark_ec::bls12::Bls12<ark_bls12_381::Config>>
+) -> Vec<u8> {
+    let mut uncompressed_bytes = Vec::new();
+    g_target
+        .serialize_uncompressed(&mut uncompressed_bytes)
+        .unwrap();
 
-    use super::*;
-    use key_share::*;
-
-    #[test]
-    //#[serial]
-    fn verify_participant_data_works() {
-        //let participant_data = key_share_gen(2);
-        //let verified = verf_key_share(2, participant_data);
-        let participant_data: KeyShare = key_share_gen();
-        let verified = verf_key_share(&participant_data);
-
-        assert!(verified);
-    }
-
-    #[test]
-    //#[serial]
-    fn aggregate_participant_data_works() {
-        //let party :Party = 123; //
-        let mut all_participant_data: Vec<KeyShare> = Vec::new();
-        let mut participant_data_1 = key_share_gen();
-        let mut participant_data_2 = key_share_gen();
-        //all_participant_data.append(&mut participant_data_2);
-        //let public_key = mpk_aggregation(all_participant_data);
-        //let vec_public_key = hex::decode(public_key).expect("will return valid hex");
-        all_participant_data.push(participant_data_1);
-        all_participant_data.push(participant_data_2);
-        let public_key = mpk_aggregation(&all_participant_data);
-        //let vec_public_key = hex::decode(public_key).expect("will return valid hex");
-
-        assert!(vec_public_key.len() == 33)
-    }
-
-    #[test]
-    //#[serial]
-    fn make_secret_key_works() {
-        let mut all_participant_data = key_share_gen(2);
-        //let mut participant_data_2 = key_share_gen(2);
-        //all_participant_data.append(&mut participant_data_2);
-        let public_key: Vec<u8> = mpk_aggregation(all_participant_data.clone());
-
-        // retrieved from https://api.drand.sh/dbd506d6ef76e5f386f41c651dcb808c5bcbd75471cc4eafa3f4df7ad4e4c493/public/2
-        let signature: Vec<u8> = hex::decode("a050676d1a1b6ceedb5fb3281cdfe88695199971426ff003c0862460b3a72811328a07ecd53b7d57fc82bb67f35efaf1").unwrap();
-
-        let secret_key = msk_aggregation(all_participant_data, 2, signature, public_key);
-        let vec_secret_key = hex::decode(secret_key).expect("will return valid hex");
-
-        assert!(vec_secret_key.len() == 32)
-    }
+    let mut hasher = Sha256::new();
+    hasher.update(uncompressed_bytes);
+    let result = hasher.finalize();
+    let mut fixed_size_u8 = [0; 32];
+    fixed_size_u8.copy_from_slice(result.as_ref());
+    fixed_size_u8.to_vec()
 }
 
+pub fn hash_2(//party: u64,
+              pk: &G1Affine, pk_0_vec: &Vec<G1Projective>,
+              pk_1_vec : &Vec<G1Projective>,
+              t_0: &Vec<G2Projective_L>,
+              t_1: &Vec<G2Projective_L>,
+              y_0: &Vec<Vec<u8>>,
+              y_1: &Vec<Vec<u8>>
+) -> bit_vec::BitVec {
+    let mut hasher = Sha256::new();
+    //hasher.update(party.to_be_bytes());
+
+    let mut uncompressed_bytes = Vec::new();
+
+    pk.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+    hasher.update(uncompressed_bytes);
+
+    let mut uncompressed_bytes = Vec::new();
+    pk_0_vec.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+    hasher.update(uncompressed_bytes);
+
+    let mut uncompressed_bytes = Vec::new();
+    pk_1_vec.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+    hasher.update(uncompressed_bytes);
+
+    let mut uncompressed_bytes = Vec::new();
+    t_0.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+    hasher.update(uncompressed_bytes);
+
+    let mut uncompressed_bytes = Vec::new();
+    t_1.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+    hasher.update(uncompressed_bytes);
+
+    let mut uncompressed_bytes = Vec::new();
+    y_0.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+
+    hasher.update(uncompressed_bytes);
+
+    let mut uncompressed_bytes = Vec::new();
+    y_1.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
+    hasher.update(uncompressed_bytes);
+
+    let result = hasher.finalize();
+    BitVec::from_bytes(&result)
+}
+pub fn concatinate_str(current_round: u64, previous_signature: &str) -> String {
+    let mut hasher = Sha256::default();
+    hasher.update(str_to_byte(previous_signature));
+    hasher.update(round_to_bytes(current_round));
+    return hasher.finalize().encode_hex();
+}
+
+
+fn main(){
+    println!("hello again!");
+}
