@@ -5,19 +5,19 @@ use crate::primitives::*;
 use anyhow::{anyhow, Result};
 use ark_bls12_381::{
     Bls12_381, g1, g2, Fr as F_L,
-    G1Affine as G1Affine_L, G2Affine as G2Affine_L,
-    G1Projective as G1Projective_L, G2Projective as G2Projective_L,
+    G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
+    G1Projective as G1Projective_bls, G2Projective as G2Projective_bls,
 };
 
 use ark_ec::{
-    bls12::Bls12,
+    //bls12::Bls12,
     hashing::{curve_maps::wb::WBMap, map_to_curve_hasher::MapToCurveBasedHasher, HashToCurve},
     models::short_weierstrass,
     pairing::Pairing,
     pairing::PairingOutput,
     AffineRepr, CurveGroup, Group,
 };
-use ark_bn254::{Fr , G1Affine, G1Projective };
+//use ark_bn254::{Fr , G1Affine, G1Projective };
 //use ark_bn254::{Fr, G1Affine, G1Projective};
 use ark_ff::Field;
 use ark_ff::UniformRand;
@@ -60,7 +60,7 @@ pub fn hash_loe_g2(dst: &[u8], msg: &[u8]) -> G2Affine_L {
     >::new(dst)
         .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
         .unwrap();
-    let hash_on_curve = G2Projective_L::from(
+    let hash_on_curve = G2Projective_bls::from(
         mapper
             .hash(msg)
             .map_err(|_| anyhow!("hash cannot be mapped to G2"))
@@ -90,8 +90,8 @@ pub fn hash_1(
 pub fn hash_2(//party: u64,
               pk: &G1Affine, pk_0_vec: &Vec<G1Projective>,
               pk_1_vec : &Vec<G1Projective>,
-              t_0: &Vec<G2Projective_L>,
-              t_1: &Vec<G2Projective_L>,
+              t_0: &Vec<G2Projective_bls>,
+              t_1: &Vec<G2Projective_bls>,
               y_0: &Vec<Vec<u8>>,
               y_1: &Vec<Vec<u8>>
 ) -> bit_vec::BitVec {
