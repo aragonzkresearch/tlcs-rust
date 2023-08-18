@@ -1,5 +1,10 @@
 mod primitives;
 mod hashes;
+mod key_share;
+
+use primitives::*;
+use crate::hashes::*;
+use crate::key_share::*;
 
 
 #[cfg(test)]

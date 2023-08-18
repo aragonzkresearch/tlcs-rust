@@ -1,146 +1,63 @@
+mod primitives;
+mod hashes;
+mod key_share;
+
 use primitives::*;
+use hashes::*;
+use key_share::*;
+//use crate::bls_signature::*;
 
+//#[allow(unused)]
+//#[allow(dead_code)]
 
-//use primitives::*;
-use crate::primitives::*;
-
-use anyhow::{anyhow, Result};
+use ark_ec::{pairing::Pairing, CurveGroup, Group};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
 use ark_bls12_381::{
-    Bls12_381, g1, g2, Fr as F_L,
+    Bls12_381,Fr as F_bls,
     G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
-    G1Projective as G1Projective_bls, G2Projective as G2Projective_bls,
+    G2Projective as G2Projective_bls, G1Projective as G1Projective_bls,
 };
-
-use ark_ec::{
-    //bls12::Bls12,
-    hashing::{curve_maps::wb::WBMap, map_to_curve_hasher::MapToCurveBasedHasher, HashToCurve},
-    models::short_weierstrass,
-    pairing::Pairing,
-    pairing::PairingOutput,
-    AffineRepr, CurveGroup, Group,
-};
-//use ark_bn254::{Fr , G1Affine, G1Projective };
-//use ark_bn254::{Fr, G1Affine, G1Projective};
-use ark_ff::Field;
-use ark_ff::UniformRand;
-use ark_ff::{field_hashers::DefaultFieldHasher, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
-use ark_std::rand::Rng;
-use hex::ToHex;
-//use sha2::{Digest, Sha256};
-use std::ops::Neg;
-use std::ptr::hash;
-use sha2::{Digest, Sha256};
-use bit_vec::BitVec;
-
-pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
-pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
-
-pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_L {
-    let mapper = MapToCurveBasedHasher::<
-        short_weierstrass::Projective<g1::Config>,
-        DefaultFieldHasher<sha2::Sha256, 128>,
-        WBMap<g1::Config>,
-    >::new(G1_DOMAIN)
-        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G1"))
-        .unwrap();
-    let hash_on_curve = G1Projective_L::from(
-        mapper
-            .hash(msg)
-            .map_err(|_| anyhow!("hash cannot be mapped to G1"))
-            .unwrap(),
-    )
-        .into_affine();
-    return hash_on_curve;
-}
-
-pub fn hash_loe_g2(dst: &[u8], msg: &[u8]) -> G2Affine_L {
-    let mapper = MapToCurveBasedHasher::<
-        short_weierstrass::Projective<g2::Config>,
-        DefaultFieldHasher<sha2::Sha256, 128>,
-        WBMap<g2::Config>,
-    >::new(dst)
-        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
-        .unwrap();
-    let hash_on_curve = G2Projective_L::from(
-        mapper
-            .hash(msg)
-            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
-            .unwrap(),
-    )
-        .into_affine();
-    return hash_on_curve;
-}
+use ark_bn254::{Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn,  G2Affine as G2Affine_bn,
+                G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
 
 
-pub fn hash_1(
-    g_target: PairingOutput<ark_ec::bls12::Bls12<ark_bls12_381::Config>>
-) -> Vec<u8> {
-    let mut uncompressed_bytes = Vec::new();
-    g_target
-        .serialize_uncompressed(&mut uncompressed_bytes)
-        .unwrap();
+pub type PublicKey<C> = C;
+pub type SecretKey<C> = <C as Group>::ScalarField;
 
-    let mut hasher = Sha256::new();
-    hasher.update(uncompressed_bytes);
-    let result = hasher.finalize();
-    let mut fixed_size_u8 = [0; 32];
-    fixed_size_u8.copy_from_slice(result.as_ref());
-    fixed_size_u8.to_vec()
-}
-
-pub fn hash_2(//party: u64,
-              pk: &G1Affine, pk_0_vec: &Vec<G1Projective>,
-              pk_1_vec : &Vec<G1Projective>,
-              t_0: &Vec<G2Projective_L>,
-              t_1: &Vec<G2Projective_L>,
-              y_0: &Vec<Vec<u8>>,
-              y_1: &Vec<Vec<u8>>
-) -> bit_vec::BitVec {
-    let mut hasher = Sha256::new();
-    //hasher.update(party.to_be_bytes());
-
-    let mut uncompressed_bytes = Vec::new();
-
-    pk.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-    hasher.update(uncompressed_bytes);
-
-    let mut uncompressed_bytes = Vec::new();
-    pk_0_vec.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-    hasher.update(uncompressed_bytes);
-
-    let mut uncompressed_bytes = Vec::new();
-    pk_1_vec.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-    hasher.update(uncompressed_bytes);
-
-    let mut uncompressed_bytes = Vec::new();
-    t_0.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-    hasher.update(uncompressed_bytes);
-
-    let mut uncompressed_bytes = Vec::new();
-    t_1.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-    hasher.update(uncompressed_bytes);
-
-    let mut uncompressed_bytes = Vec::new();
-    y_0.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-
-    hasher.update(uncompressed_bytes);
-
-    let mut uncompressed_bytes = Vec::new();
-    y_1.serialize_uncompressed(&mut uncompressed_bytes).unwrap();
-    hasher.update(uncompressed_bytes);
-
-    let result = hasher.finalize();
-    BitVec::from_bytes(&result)
-}
-pub fn concatinate_str(current_round: u64, previous_signature: &str) -> String {
-    let mut hasher = Sha256::default();
-    hasher.update(str_to_byte(previous_signature));
-    hasher.update(round_to_bytes(current_round));
-    return hasher.finalize().encode_hex();
-}
+pub const K_SHARE: u32 = 2;
 
 
 fn main(){
-    println!("hello again!");
+    type KS = KeyShare<Bn254>; // "type alias"
+    let pk_l = G2Projective_bls::generator();
+    let round = 34;
+
+    let mut rng = ark_std::test_rng();
+
+    let ks = KS::key_share_gen(&mut rng, &pk_l, round);
+    dbg!(ks);
+    //let ks = KeyShare::<Bn254>::key_share_gen(&mut rng);
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use ark_bls12_381::Bls12_381;
+    use ark_bn254::Bn254;
+
+    #[test]
+    fn test_aggregation() {
+        type KS = KeyShare<Bn254>; // "type alias"
+
+        let mut rng = ark_std::test_rng();
+        let pk_l = G2Projective_bls::generator();
+        let round = 34;
+
+        let ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_l, round);
+
+        todo!();
+    }
 }
