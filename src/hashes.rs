@@ -4,9 +4,9 @@ use crate::primitives::*;
 
 use anyhow::{anyhow, Result};
 use ark_bls12_381::{
-    Bls12_381, g1, g2, Fr as F_L,
-    G1Affine as G1Affine_L, G2Affine as G2Affine_L,
-    G1Projective as G1Projective_L, G2Projective as G2Projective_L,
+    Bls12_381, g1, g2, Fr as F_bls,
+    G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
+    G1Projective as G1Projective_bls, G2Projective as G2Projective_bls,
 };
 
 use ark_ec::{
@@ -17,7 +17,9 @@ use ark_ec::{
     pairing::PairingOutput,
     AffineRepr, CurveGroup, Group,
 };
-use ark_bn254::{Fr , G1Affine, G1Projective };
+use ark_bn254::{Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn,  G2Affine as G2Affine_bn,
+                G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
+
 //use ark_bn254::{Fr, G1Affine, G1Projective};
 use ark_ff::Field;
 use ark_ff::UniformRand;
@@ -34,7 +36,7 @@ use bit_vec::BitVec;
 pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
 
-pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_L {
+pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_bls {
     let mapper = MapToCurveBasedHasher::<
         short_weierstrass::Projective<g1::Config>,
         DefaultFieldHasher<sha2::Sha256, 128>,
@@ -42,7 +44,7 @@ pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_L {
     >::new(G1_DOMAIN)
         .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G1"))
         .unwrap();
-    let hash_on_curve = G1Projective_L::from(
+    let hash_on_curve = G1Projective_bls::from(
         mapper
             .hash(msg)
             .map_err(|_| anyhow!("hash cannot be mapped to G1"))
@@ -52,15 +54,15 @@ pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_L {
     return hash_on_curve;
 }
 
-pub fn hash_loe_g2(dst: &[u8], msg: &[u8]) -> G2Affine_L {
+pub fn hash_loe_g2( msg: &[u8]) -> G2Affine_bls {
     let mapper = MapToCurveBasedHasher::<
         short_weierstrass::Projective<g2::Config>,
         DefaultFieldHasher<sha2::Sha256, 128>,
         WBMap<g2::Config>,
-    >::new(dst)
+    >::new(G2_DOMAIN)
         .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
         .unwrap();
-    let hash_on_curve = G2Projective_L::from(
+    let hash_on_curve = G2Projective_bls::from(
         mapper
             .hash(msg)
             .map_err(|_| anyhow!("hash cannot be mapped to G2"))
@@ -69,10 +71,49 @@ pub fn hash_loe_g2(dst: &[u8], msg: &[u8]) -> G2Affine_L {
         .into_affine();
     return hash_on_curve;
 }
+/*
+    let mapper = MapToCurveBasedHasher::<
+        short_weierstrass::Projective<g2::Config>,
+        DefaultFieldHasher<sha2::Sha256, 128>,
+        WBMap<g2::Config>,
+    >::new(dst)
+        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
+        .unwrap();
+    let hash_on_curve = G2Projective::from(
+        mapper
+            .hash(msg)
+            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
+            .unwrap(),
+    )
+        .into_affine();
+    return hash_on_curve;
+ */
+/*
+pub fn hash_loe_g2<E : Pairing>(dst: &[u8], msg: &[u8]) -> E::G2Affine
+    where <E as Pairing>::G2Prepared: From<ark_ec::short_weierstrass::Affine<ark_bls12_381::g2::Config>>,
+          <E as Pairing>::G2Affine: From<<E as Pairing>::G2Prepared>
+{
+    let mapper = MapToCurveBasedHasher::<
+        short_weierstrass::Projective<g2::Config>,
+        DefaultFieldHasher<sha2::Sha256, 128>,
+        WBMap<g2::Config>,
+    >::new(dst)
+        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
+        .unwrap();
+    let hash_on_curve = E::G2Prepared::from(
+        mapper
+            .hash(msg)
+            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
+            .unwrap(),
+    ).into();
+    return hash_on_curve;
+}
 
 
-pub fn hash_1(
-    g_target: PairingOutput<ark_ec::bls12::Bls12<ark_bls12_381::Config>>
+ */
+
+pub fn hash_1<E : Pairing>(
+    g_target: PairingOutput<E>
 ) -> Vec<u8> {
     let mut uncompressed_bytes = Vec::new();
     g_target
@@ -87,11 +128,11 @@ pub fn hash_1(
     fixed_size_u8.to_vec()
 }
 
-pub fn hash_2(//party: u64,
-              pk: &G1Affine, pk_0_vec: &Vec<G1Projective>,
-              pk_1_vec : &Vec<G1Projective>,
-              t_0: &Vec<G2Projective_L>,
-              t_1: &Vec<G2Projective_L>,
+pub fn hash_2<E : Pairing>(
+              pk: &E::G1, pk_0_vec: &Vec<E::G1>,
+              pk_1_vec : &Vec<E::G1>,
+              t_0: &Vec<G2Projective_bls>,
+              t_1: &Vec<G2Projective_bls>,
               y_0: &Vec<Vec<u8>>,
               y_1: &Vec<Vec<u8>>
 ) -> bit_vec::BitVec {

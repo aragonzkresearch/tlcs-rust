@@ -2,74 +2,62 @@ mod primitives;
 mod hashes;
 mod key_share;
 
-use key_share::*;
+use primitives::*;
 use hashes::*;
+use key_share::*;
+//use crate::bls_signature::*;
+
+//#[allow(unused)]
+//#[allow(dead_code)]
+
+use ark_ec::{pairing::Pairing, CurveGroup, Group};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
+use ark_bls12_381::{
+    Bls12_381,Fr as F_bls,
+    G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
+    G2Projective as G2Projective_bls, G1Projective as G1Projective_bls,
+};
+use ark_bn254::{Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn,  G2Affine as G2Affine_bn,
+                G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
 
 
-fn main() {
-    let k = key_share_gen();
-    let b = verf_key_share(&k);
+pub type PublicKey<C> = C;
+pub type SecretKey<C> = <C as Group>::ScalarField;
 
-    let mut k_vec: Vec<KeyShare> = Vec::new();
-    k_vec.push(k);
+pub const K_SHARE: u32 = 2;
 
-    let mpk = mpk_aggregation(&k_vec);
-    dbg!(mpk);
+
+fn main(){
+    type KS = KeyShare<Bn254>; // "type alias"
+    let pk_l = G2Projective_bls::generator();
+    let round = 34;
+
+    let mut rng = ark_std::test_rng();
+
+    let ks = KS::key_share_gen(&mut rng, &pk_l, round);
+    dbg!(ks);
+    //let ks = KeyShare::<Bn254>::key_share_gen(&mut rng);
 
 }
-
 
 #[cfg(test)]
 mod tests {
-    //use serial_test::serial;
-
     use super::*;
-    use key_share::*;
+
+    use ark_bls12_381::Bls12_381;
+    use ark_bn254::Bn254;
 
     #[test]
-    //#[serial]
-    fn verify_participant_data_works() {
-        //let participant_data = key_share_gen(2);
-        //let verified = verf_key_share(2, participant_data);
-        let participant_data: KeyShare = key_share_gen();
-        let verified = verf_key_share(&participant_data);
+    fn test_aggregation() {
+        type KS = KeyShare<Bn254>; // "type alias"
 
-        assert!(verified);
-    }
+        let mut rng = ark_std::test_rng();
+        let pk_l = G2Projective_bls::generator();
+        let round = 34;
 
-    #[test]
-    //#[serial]
-    fn aggregate_participant_data_works() {
-        //let party :Party = 123; //
-        let mut all_participant_data: Vec<KeyShare> = Vec::new();
-        let mut participant_data_1 = key_share_gen();
-        let mut participant_data_2 = key_share_gen();
-        //all_participant_data.append(&mut participant_data_2);
-        //let public_key = mpk_aggregation(all_participant_data);
-        //let vec_public_key = hex::decode(public_key).expect("will return valid hex");
-        all_participant_data.push(participant_data_1);
-        all_participant_data.push(participant_data_2);
-        let public_key = mpk_aggregation(&all_participant_data);
-        //let vec_public_key = hex::decode(public_key).expect("will return valid hex");
+        let ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_l, round);
 
-        assert!(vec_public_key.len() == 33)
-    }
-
-    #[test]
-    //#[serial]
-    fn make_secret_key_works() {
-        let mut all_participant_data = key_share_gen(2);
-        //let mut participant_data_2 = key_share_gen(2);
-        //all_participant_data.append(&mut participant_data_2);
-        let public_key: Vec<u8> = mpk_aggregation(all_participant_data.clone());
-
-        // retrieved from https://api.drand.sh/dbd506d6ef76e5f386f41c651dcb808c5bcbd75471cc4eafa3f4df7ad4e4c493/public/2
-        let signature: Vec<u8> = hex::decode("a050676d1a1b6ceedb5fb3281cdfe88695199971426ff003c0862460b3a72811328a07ecd53b7d57fc82bb67f35efaf1").unwrap();
-
-        let secret_key = msk_aggregation(all_participant_data, 2, signature, public_key);
-        let vec_secret_key = hex::decode(secret_key).expect("will return valid hex");
-
-        assert!(vec_secret_key.len() == 32)
+        todo!();
     }
 }
-
