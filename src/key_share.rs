@@ -32,7 +32,7 @@ pub const K_SHARE: u32 = 2;
 /// E1: LoE Pairing
 /// E: custom Pairing
 ///
-#[derive(Debug,CanonicalSerialize)]
+#[derive(Debug,CanonicalSerialize, CanonicalDeserialize,PartialEq)]
 pub struct KeyShare<E: Pairing> {
     pub pk: E::G1,
     pub pk_0: Vec<E::G1>,
@@ -47,7 +47,7 @@ pub struct KeyShare<E: Pairing> {
     pub y_1: Vec<Vec<u8>>,
 }
 
-
+/*
 impl<E: Pairing> CanonicalSerialize for KeyShare<E> {
     fn serialize_with_mode<W: Write>(&self, mut writer: W, mode: Compress) -> Result<(), SerializationError> {
         self.pk.serialize_with_mode(&mut writer, mode)?;
@@ -81,23 +81,43 @@ impl<E: Pairing> CanonicalSerialize for KeyShare<E> {
 
 impl<E: Pairing> CanonicalDeserialize for KeyShare<E> {
     fn deserialize_with_mode<R: Read>(mut reader: R, compress: Compress, validate: Validate) -> Result<Self, SerializationError> {
-        let name = String::deserialize_with_mode(&mut reader, compress, validate)?;
-        let group_member = E::G1Affine::deserialize_with_mode(&mut reader, compress, validate)?;
-        Ok(Self { name, group_member })
+        let pk = E::G1::deserialize_with_mode(&mut reader, compress, validate)?;
+        let pk_0 = Vec::<E::G1>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let pk_1=  Vec::<E::G1>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let sk = SecretKey::<E::G1>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let sk_0 = Vec::<SecretKey<E::G1>>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let sk_1 = Vec::<SecretKey<E::G1>>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let t = Vec::<SecretKey<G2Projective_bls>>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let t_0 =  Vec::<G2Projective_bls>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let t_1 = Vec::<G2Projective_bls>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let y_0 = Vec::<Vec<u8>>::deserialize_with_mode(&mut reader, compress, validate)?;
+        let y_1 = Vec::<Vec<u8>>::deserialize_with_mode(&mut reader, compress, validate)?;
+        Ok(Self {pk, pk_0, pk_1, sk, sk_0, sk_1, t, t_0, t_1, y_0, y_1 })
     }
 }
 
 // We additionally have to implement the `Valid` trait for our struct.
 // This trait specifies how to perform certain validation checks on deserialized types.
 // For example, we can check that the deserialized group elements are in the prime-order subgroup.
-impl<E: Pairing>  Valid for PairingSerilization<E> {
+impl<E: Pairing>  Valid for KeyShare<E> {
     fn check(&self) -> Result<(), SerializationError> {
-        self.name.check()?;
-        self.group_member.check()?;
-        Ok(())
+        self.pk.check()?;
+        self.pk_0.check()?;
+        self.pk_1.check()?;
+        self.sk.check()?;
+        self.sk_0.check()?;
+        self.sk_1.check()?;
+        self.t.check()?;
+        self.t_0.check()?;
+        self.t_1.check()?;
+        self.y_0.check()?;
+        self.y_1.check()?;
+       Ok(())
     }
 }
 
+
+ */
 
 impl<E: Pairing> KeyShare<E> {
     pub fn key_share_gen<R: Rng>(rng: &mut R, pk_loe_str: &str, round: u64) -> Self {
@@ -119,8 +139,6 @@ impl<E: Pairing> KeyShare<E> {
         let mut v_vector_1: Vec<G2Projective_bls> = Vec::new();
 
         let g2 = G2Projective_bls::generator();
-        //let pk_loe: G2Projective_bls = G2Projective_bls::generator();
-        //let pk_loe: <ark_bls12_381::Config>::G2 = Bls12_381::G2::generator();
 
         for _ in 0..K_SHARE {
             let sk_0 = <E::G1 as Group>::ScalarField::rand(rng);
@@ -221,11 +239,6 @@ impl<E: Pairing> KeyShare<E> {
     // pub fn verf_key_share(&self) -> bool {
     /// usage: KeyShare::<G1Projective, G2Projective_L>::verf_key_share(k);
     pub fn key_share_verify(k: &Self, round: u64) -> bool {
-        //let k = key_share_gen();
-        //let t = &k.pk_0[0] + &k.pk_1[0];
-        //let a = &k.pk;
-        //let g2 = G2::generator();
-
         for i in 0..K_SHARE {
             if k.pk_0[i as usize] + &k.pk_1[i as usize] != *&k.pk {
                 return false;
@@ -233,7 +246,6 @@ impl<E: Pairing> KeyShare<E> {
         }
 
         let hash_vrf = hash_2::<E>(
-            //k.party,
             &k.pk,
             &k.pk_0,
             &k.pk_1,
@@ -312,10 +324,11 @@ mod tests {
         type KS = KeyShare<Bn254>; // "type alias"
 
         let mut rng = ark_std::test_rng();
-        let pk_loe = G2Projective_bls::generator();
+        //let pk_loe = G2Projective_bls::generator();
+        let pk_loe_str = "868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31";
         let round = 34;
 
-        let ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_loe, round);
+        let ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_loe_str, round);
 
         todo!();
     }
