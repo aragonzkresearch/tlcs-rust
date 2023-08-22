@@ -23,27 +23,27 @@ impl fmt::Display for InvalidPoint {
         write!(f, "The data does not map to a valid point on the curve")
     }
 }
-pub fn str_to_group<G: Group>(g_str: &str)->  Result<G, InvalidPoint>{
+pub fn str_to_group<G: CurveGroup>(g_str: &str)->  Result<G, InvalidPoint>{
     let g_bytes = hex::decode(g_str).unwrap();
     Option::from(G::deserialize_compressed(&*g_bytes).unwrap()).ok_or(InvalidPoint)
 }
 
-pub fn byte_to_group<G: Group>(g_bytes: Vec<u8>)->  Result<G, InvalidPoint>{ // test : NOT DONE
+pub fn byte_to_group<G: CurveGroup>(g_bytes: Vec<u8>)->  Result<G, InvalidPoint>{ // test : NOT DONE
     Option::from(G::deserialize_compressed(&*g_bytes).unwrap()).ok_or(InvalidPoint)
 }
 
 
-pub fn group_to_hex<G: Group>(g: &G) -> String{
+pub fn group_to_hex<G: CurveGroup>(g: &G) -> String{
     let mut g_bytes = Vec::new();
     g.serialize_compressed(&mut g_bytes).unwrap();
     let g_hex = hex::encode(g_bytes);
     g_hex
 }
 
-pub fn group_to_byte<G: Group>(g: &G) ->Vec<u8>{ // test : NOT DONE
+pub fn group_to_byte<G: CurveGroup>(g: &G) ->Vec<u8>{ // test : NOT DONE
     let mut g_bytes = Vec::new();
-    g.serialize_compressed(&mut g_bytes).unwrap();
-    //g.serialize_uncompressed(&mut g_bytes).unwrap();
+    //g.serialize_compressed(&mut g_bytes).unwrap();
+    g.serialize_uncompressed(&mut g_bytes).unwrap();
     g_bytes
 }
 
