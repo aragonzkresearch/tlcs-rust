@@ -28,12 +28,11 @@ pub fn keyshare_generate(
     loe_pk: Vec<u8>,
 ) -> Vec<u8> {
     // Make key from round and loe_pk
-    type KS = KeyShare<Bn254>;
     let mut rng = ark_std::test_rng();
     let loe_pk_str = hex::encode(loe_pk);
     let key : KeyShare::<Bn254> = key_share_gen::<Bn254>(&mut rng, &loe_pk_str, round);
     // TODO: use the proper Pairing (from scheme)
-    //
+    // TODO: DONE
     // let key: KeyShare<Bn254> = key_share_gen(&mut rng, &loe_pk_str, round);
 
     return key_share_store::<Bn254>(&key);
@@ -55,6 +54,7 @@ pub fn make_aggregate_key(
     all_data: Vec<Vec<u8>>,
 ) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
+    // TODO: DONE
     return mpk_aggregation_from_stored_data::<Bn254>(&all_data);
 }
 
@@ -67,6 +67,7 @@ pub fn make_secret_key(
 ) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
     // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
+    // TODO: DONE
     let sk_t =str_to_group<G1Affine_bls>(&pubkey).unwrap();
     return  msk_aggregation_from_stored_data::<Bn254>(&sk_t, all_data);
     //return hex::encode(sk_vec);
@@ -87,7 +88,7 @@ fn key_share_store<E: Pairing>(key_share: &KeyShare<E>) -> Vec<u8> {
 pub fn verify_key_share_store<E: Pairing>(key_share_stored: Vec<u8>, round: u64) -> bool {
     let ks = KeyShare::<E>::deserialize_compressed(key_share_stored.as_slice())
         .expect("Deserialization should succeed");
-    KeyShare::<E>::key_share_verify(&ks, round)
+    return KeyShare::<E>::key_share_verify(&ks, round);
 }
 
 #[allow(dead_code)]
@@ -102,7 +103,7 @@ pub fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -
     let mut mpk_serialized_compressed = Vec::new();
     mpk.serialize_compressed(&mut mpk_serialized_compressed)
         .expect("Serialization should succeed");
-    mpk_serialized_compressed
+    return mpk_serialized_compressed;
 }
 
 #[allow(dead_code)]
@@ -126,7 +127,7 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
     }
     let mut msk_bytes = Vec::new();
     msk.serialize_compressed(&mut msk_bytes).unwrap();
-    hex::encode(msk_bytes);
+    return hex::encode(msk_bytes);
 }
 
 #[cfg(test)]
