@@ -70,8 +70,8 @@ pub fn make_secret_key(
     // TODO: use the proper Pairing (from scheme)
     // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
     // TODO: DONE
-    let sk_t =str_to_group<G1Affine_bls>(&pubkey).unwrap();
-    return  msk_aggregation_from_stored_data::<Bn254>(&sk_t, all_data);
+    let sk_t =str_to_group::<G1Affine_bls>(&pubkey).unwrap();
+    return  msk_aggregation_from_stored_data::<Bn254>(&sk_t, &all_data);
     //return hex::encode(sk_vec);
 }
 
@@ -112,7 +112,7 @@ pub fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -
 pub fn msk_aggregation_from_stored_data<E: Pairing>(
     sk_t: &G1Affine_bls,
     key_shares: &Vec<Vec<u8>>,
-) -> String {
+) -> Vec<u8> {
     let mut msk = E::ScalarField::zero();
     for k in key_shares {
         let key_share = KeyShare::<E>::deserialize_compressed(k.as_slice())
@@ -129,7 +129,7 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
     }
     let mut msk_bytes = Vec::new();
     msk.serialize_compressed(&mut msk_bytes).unwrap();
-    return hex::encode(msk_bytes);
+    return msk_bytes;
 }
 
 #[cfg(test)]
