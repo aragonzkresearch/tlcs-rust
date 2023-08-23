@@ -12,6 +12,7 @@ use ark_bls12_381::{
     //G2Affine as G2Affine_bls,
     //G2Projective as G2Projective_bls, G1Projective as G1Projective_bls,
 };
+use ark_bn254::Bn254;
 use ark_ec::pairing::Pairing;
 use ark_serialize::{
     CanonicalDeserialize,
@@ -33,12 +34,15 @@ pub fn keyshare_generate(
     loe_pk: Vec<u8>,
 ) -> Vec<u8> {
     // Make key from round and loe_pk
+
+    type KS = KeyShare<Bn254>;
     let mut rng = ark_std::test_rng();
     let loe_pk_str = hex::encode(loe_pk);
+    let key = KeyShare::<Bn254>::key_share_gen(&mut rng, &loe_pk_str, round);
     // TODO: use the proper Pairing (from scheme)
-    let key: KeyShare = key_share_gen(&mut rng, &loe_pk_str, round);
+    // let key: KeyShare<Bn254> = key_share_gen(&mut rng, &loe_pk_str, round);
 
-    return key_share_store(&key);
+    return key_share_store::<Bn254>(&key);
 }
 
 pub fn keyshare_verify(
