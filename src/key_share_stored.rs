@@ -29,12 +29,13 @@ const LOE_PUBLIC_KEY: [u8; 96] = hex!("a0b862a7527fee3a731bcb59280ab6abd62d5c0b6
 
 pub fn keyshare_generate(
     round: u64,
-    _scheme: u32,
+    scheme: String,
     loe_pk: Vec<u8>,
 ) -> Vec<u8> {
     // Make key from round and loe_pk
     let mut rng = ark_std::test_rng();
     let loe_pk_str = hex::encode(loe_pk);
+    // TODO: use the proper Pairing (from scheme)
     let key: KeyShare = key_share_gen(&mut rng, &loe_pk_str, round);
 
     return key_share_store(&key);
@@ -42,28 +43,31 @@ pub fn keyshare_generate(
 
 pub fn keyshare_verify(
     round: u64,
-    _scheme: u32,
+    scheme: String,
     data: Vec<u8>,
 ) -> bool {
+    // TODO: use the proper Pairing (from scheme)
     return verify_key_share_store(data, round);
 }
 
 pub fn make_aggregate_key(
     round: u64,
-    _scheme: u32,
+    scheme: String,
     all_data: Vec<Vec<u8>>,
 ) -> Vec<u8> {
-    pk_vec = mpk_aggregation_from_stored_data(&all_data);
-    return hex::encode(pk_vec);
+    // TODO: use the proper Pairing (from scheme)
+    return mpk_aggregation_from_stored_data(&all_data);
 }
 
 pub fn make_secret_key(
     round: u64,
-    _scheme: u32,
-    signature: Vec<u8>,
+    scheme: String,
+    loe_signature: Vec<u8>,
     all_data: Vec<Vec<u8>>,
     pubkey: String,
 ) -> Vec<u8> {
+    // TODO: use the proper Pairing (from scheme)
+    // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
     sk_vec = msk_aggregation_from_stored_data(all_data);
     return hex::encode(sk_vec);
 }
