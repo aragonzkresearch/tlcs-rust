@@ -5,13 +5,7 @@ use crate::primitives::*;
 
 //#[allow(unused)]
 //#[allow(dead_code)]
-use ark_bls12_381::{
-    Bls12_381,
-    //Fr as F_bls,
-    G1Affine as G1Affine_bls,
-    //G2Affine as G2Affine_bls,
-    //G2Projective as G2Projective_bls, G1Projective as G1Projective_bls,
-};
+use ark_bls12_381::{Bls12_381,G1Affine as G1Affine_bls};
 use ark_bn254::Bn254;
 use ark_ec::pairing::Pairing;
 use ark_serialize::{
@@ -19,10 +13,10 @@ use ark_serialize::{
     CanonicalSerialize,
     //    Valid
 };
-//use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
+
 use ark_std::Zero;
 
-const LOE_PUBLIC_KEY: [u8; 96] = hex!("a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
+const LOE_PUBLIC_KEY: [u8;96] = hex!("a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
 
 /******************************************************************************************
 ** The four functions needed by the chain
@@ -34,12 +28,12 @@ pub fn keyshare_generate(
     loe_pk: Vec<u8>,
 ) -> Vec<u8> {
     // Make key from round and loe_pk
-
     type KS = KeyShare<Bn254>;
     let mut rng = ark_std::test_rng();
     let loe_pk_str = hex::encode(loe_pk);
-    let key = KeyShare::<Bn254>::key_share_gen(&mut rng, &loe_pk_str, round);
+    let key : KeyShare::<Bn254> = key_share_gen::<Bn254>(&mut rng, &loe_pk_str, round);
     // TODO: use the proper Pairing (from scheme)
+    //
     // let key: KeyShare<Bn254> = key_share_gen(&mut rng, &loe_pk_str, round);
 
     return key_share_store::<Bn254>(&key);
@@ -51,7 +45,8 @@ pub fn keyshare_verify(
     data: Vec<u8>,
 ) -> bool {
     // TODO: use the proper Pairing (from scheme)
-    return verify_key_share_store(data, round);
+    // TODO: DONE
+    return verify_key_share_store::<Bn254>(data, round);
 }
 
 pub fn make_aggregate_key(
@@ -60,7 +55,7 @@ pub fn make_aggregate_key(
     all_data: Vec<Vec<u8>>,
 ) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
-    return mpk_aggregation_from_stored_data(&all_data);
+    return mpk_aggregation_from_stored_data::<Bn254>(&all_data);
 }
 
 pub fn make_secret_key(
@@ -72,8 +67,9 @@ pub fn make_secret_key(
 ) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
     // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
-    sk_vec = msk_aggregation_from_stored_data(all_data);
-    return hex::encode(sk_vec);
+    let sk_t =str_to_group<G1Affine_bls>(&pubkey).unwrap();
+    return  msk_aggregation_from_stored_data::<Bn254>(&sk_t, all_data);
+    //return hex::encode(sk_vec);
 }
 
 /******************************************************************************************/
@@ -113,7 +109,7 @@ pub fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -
 pub fn msk_aggregation_from_stored_data<E: Pairing>(
     sk_t: &G1Affine_bls,
     key_shares: &Vec<Vec<u8>>,
-) -> E::ScalarField {
+) -> String {
     let mut msk = E::ScalarField::zero();
     for k in key_shares {
         let key_share = KeyShare::<E>::deserialize_compressed(k.as_slice())
@@ -128,7 +124,9 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
         msk = msk + sk_0;
         msk = msk + sk_1;
     }
-    return msk;
+    let mut msk_bytes = Vec::new();
+    msk.serialize_compressed(&mut msk_bytes).unwrap();
+    hex::encode(msk_bytes);
 }
 
 #[cfg(test)]
