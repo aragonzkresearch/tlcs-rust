@@ -5,13 +5,13 @@
 
 //use bit_vec::BitVec;
 //use sha2::{Digest, Sha256};
-use ark_ec::{CurveGroup};
-use ark_ff::Field;
 //use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 //use hex::ToHex;
 //use rand::{thread_rng, Rng};
-use std::fmt;
 // delete for real
+use ark_ec::CurveGroup;
+use ark_ff::Field;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct InvalidPoint;
@@ -67,7 +67,7 @@ pub fn str_to_byte(g_str: &str) -> Vec<u8> {
 }
 
 ///
-/// Consider the case with tow different length vectors
+/// Consider the case with two different length vectors
 ///
 pub fn xor(a: &Vec<u8>, b: &Vec<u8>) -> Vec<u8> {
     let len = a.len().max(b.len());

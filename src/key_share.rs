@@ -1,29 +1,30 @@
 //use crate::bls_signature::*;
-use crate::primitives::*;
 use crate::hashes::*;
+use crate::primitives::*;
 
 //#[allow(unused)]
 //#[allow(dead_code)]
 
+use ark_bls12_381::{Bls12_381, G1Affine as G1Affine_bls, G2Projective as G2Projective_bls};
+/*
+use ark_bls12_381::{
+    Bls12_381, Fr as F_bls, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
+    G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
+};
+use ark_bn254::{
+    Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn, G1Projective as G1Projective_bn,
+    G2Affine as G2Affine_bn, G2Projective as G2Projective_bn,
+};
+*/
 use ark_ec::{pairing::Pairing, Group};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::io::{Read, Write};
+//use ark_std::io::{Read, Write};
 use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
-use ark_bls12_381::{
-    Bls12_381,Fr as F_bls,
-    G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
-    G2Projective as G2Projective_bls, G1Projective as G1Projective_bls,
-};
-use ark_bn254::{Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn,  G2Affine as G2Affine_bn,
-                G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
-
 
 //pub type PublicKey<C> = C;
 pub type SecretKey<C> = <C as Group>::ScalarField;
 
 pub const K_SHARE: u32 = 2;
-
-
 
 // /// G1L: the Pairing G1 grup used by the TLock chain (drand/LoE)
 // /// G2L: the Pairing G2 grup used by the TLock chain (drand/LoE)
@@ -32,7 +33,7 @@ pub const K_SHARE: u32 = 2;
 /// E1: LoE Pairing
 /// E: custom Pairing
 ///
-#[derive(Debug,CanonicalSerialize, CanonicalDeserialize,PartialEq)]
+#[derive(Debug, CanonicalSerialize, CanonicalDeserialize, PartialEq)]
 pub struct KeyShare<E: Pairing> {
     pub pk: E::G1,
     pub pk_0: Vec<E::G1>,
@@ -120,11 +121,12 @@ impl<E: Pairing>  Valid for KeyShare<E> {
  */
 
 impl<E: Pairing> KeyShare<E> {
+    #[allow(dead_code)]
     pub fn key_share_gen<R: Rng>(rng: &mut R, pk_loe_str: &str, round: u64) -> Self {
         let pk_loe = str_to_group::<G2Projective_bls>(pk_loe_str).unwrap();
         let g = <E::G1 as Group>::generator();
         let secret_key = <E::G1 as Group>::ScalarField::rand(rng);
-        let public_key : E::G1 = g.mul(secret_key);
+        let public_key: E::G1 = g.mul(secret_key);
         let mut pk_vector_0: Vec<E::G1> = Vec::new();
         let mut pk_vector_1: Vec<E::G1> = Vec::new();
         let mut sk_vector_0: Vec<<E::G1 as Group>::ScalarField> = Vec::new();
@@ -159,8 +161,6 @@ impl<E: Pairing> KeyShare<E> {
             let z_0 = Bls12_381::pairing(hash_loe_g1(&round_to_bytes(round)), pk_loe.mul(&t_0));
             let z_1 = Bls12_381::pairing(hash_loe_g1(&round_to_bytes(round)), pk_loe.mul(&t_1));
 
-
-
             t_vector_0.push(t_0);
             t_vector_1.push(t_1);
             let sk_ser_0 = serialize_compressed_f(&sk_0);
@@ -187,7 +187,7 @@ impl<E: Pairing> KeyShare<E> {
             .enumerate()
             .map(|(i, val)| match val {
                 false => t_vector_0[i],
-                true  => t_vector_1[i],
+                true => t_vector_1[i],
                 //_ => panic!("Invalid value in c vector"),
             })
             .collect();
@@ -239,7 +239,7 @@ impl<E: Pairing> KeyShare<E> {
     // /// usage: k.verify_key_share();
     // pub fn verf_key_share(&self) -> bool {
     /// usage: KeyShare::<G1Projective, G2Projective_L>::verf_key_share(k);
-     #[allow(unused)]
+    #[allow(unused)]
     pub fn key_share_verify(k: &Self, round: u64) -> bool {
         for i in 0..K_SHARE {
             if k.pk_0[i as usize] + &k.pk_1[i as usize] != *&k.pk {
@@ -247,15 +247,7 @@ impl<E: Pairing> KeyShare<E> {
             }
         }
 
-        let hash_vrf = hash_2::<E>(
-            &k.pk,
-            &k.pk_0,
-            &k.pk_1,
-            &k.t_0,
-            &k.t_1,
-            &k.y_0,
-            &k.y_1,
-        );
+        let hash_vrf = hash_2::<E>(&k.pk, &k.pk_0, &k.pk_1, &k.t_0, &k.t_1, &k.y_0, &k.y_1);
 
         let first_k_bits_vrf: Vec<bool> = hash_vrf.iter().take(K_SHARE as usize).collect();
 
@@ -274,7 +266,7 @@ impl<E: Pairing> KeyShare<E> {
                         &k.t[i as usize],
                         &k.t_0[i as usize],
                         &k.y_0[i as usize],
-                        round
+                        round,
                     ),
                     //_ => panic!("Invalid bit value"),
                 };
@@ -287,6 +279,7 @@ impl<E: Pairing> KeyShare<E> {
         true
     }
 
+    #[allow(dead_code)]
     pub fn mpk_aggregation(key_shares: &Vec<Self>) -> E::G1 {
         let mut mpk = E::G1::zero();
         for i in 0..key_shares.len() {
@@ -298,14 +291,14 @@ impl<E: Pairing> KeyShare<E> {
     #[allow(unused)]
     pub fn msk_aggregation(sk_t: &G1Affine_bls, key_shares: &Vec<Self>) -> E::ScalarField {
         let mut msk = E::ScalarField::zero();
-        for i in 0..key_shares.len(){
+        for i in 0..key_shares.len() {
             let z_0 = Bls12_381::pairing(sk_t, &key_shares[i as usize].t_0[0]);
             let z_1 = Bls12_381::pairing(sk_t, &key_shares[i as usize].t_1[0]);
 
-            let sk0 = xor(&hash_1::<Bls12_381>(z_0) , &key_shares[i as usize].y_0[0]);
-            let sk1 = xor(&hash_1::<Bls12_381>(z_1) , &key_shares[i as usize].y_1[0]);
-            let sk_0  = E::ScalarField ::deserialize_uncompressed(&*sk0).unwrap();
-            let sk_1  = E::ScalarField ::deserialize_uncompressed(&*sk1).unwrap();
+            let sk0 = xor(&hash_1::<Bls12_381>(z_0), &key_shares[i as usize].y_0[0]);
+            let sk1 = xor(&hash_1::<Bls12_381>(z_1), &key_shares[i as usize].y_1[0]);
+            let sk_0 = E::ScalarField::deserialize_uncompressed(&*sk0).unwrap();
+            let sk_1 = E::ScalarField::deserialize_uncompressed(&*sk1).unwrap();
             msk = msk + sk_0;
             msk = msk + sk_1;
         }
@@ -313,24 +306,23 @@ impl<E: Pairing> KeyShare<E> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use ark_bls12_381::Bls12_381;
+    //use ark_bls12_381::Bls12_381;
     use ark_bn254::Bn254;
 
     #[test]
     fn test_aggregation() {
-        type KS = KeyShare<Bn254>; // "type alias"
+        //type KS = KeyShare<Bn254>; // "type alias"
 
         let mut rng = ark_std::test_rng();
         //let pk_loe = G2Projective_bls::generator();
         let pk_loe_str = "868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31";
         let round = 34;
 
-        let ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_loe_str, round);
+        let _ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_loe_str, round);
 
         todo!();
     }
