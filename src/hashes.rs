@@ -1,37 +1,37 @@
 //use primitives::*;
 use crate::primitives::*;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow};
 use ark_bls12_381::{
-    g1, g2, Bls12_381, Fr as F_bls, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
+    g1, g2,  G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
     G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
 };
 
-use ark_bn254::{
+/*use ark_bn254::{
     Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn, G1Projective as G1Projective_bn,
     G2Affine as G2Affine_bn, G2Projective as G2Projective_bn,
 };
+
+ */
 use ark_ec::{
-    bls12::Bls12,
     hashing::{curve_maps::wb::WBMap, map_to_curve_hasher::MapToCurveBasedHasher, HashToCurve},
     models::short_weierstrass,
     pairing::Pairing,
-    pairing::PairingOutput,
-    AffineRepr, CurveGroup, Group,
+    pairing::PairingOutput,CurveGroup,
 };
 
 //use ark_bn254::{Fr, G1Affine, G1Projective};
-use ark_ff::Field;
-use ark_ff::UniformRand;
-use ark_ff::{field_hashers::DefaultFieldHasher, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
-use ark_std::rand::Rng;
+//use ark_ff::Field;
+//use ark_ff::UniformRand;
+use ark_ff::{field_hashers::DefaultFieldHasher};
+use ark_serialize::{ CanonicalSerialize};
+//use ark_std::rand::Rng;
 use hex::ToHex;
 //use sha2::{Digest, Sha256};
 use bit_vec::BitVec;
 use sha2::{Digest, Sha256};
-use std::ops::Neg;
-use std::ptr::hash;
+//use std::ops::Neg;
+//use std::ptr::hash;
 
 pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
@@ -54,6 +54,8 @@ pub fn hash_loe_g1(msg: &[u8]) -> G1Affine_bls {
     return hash_on_curve;
 }
 
+#[allow(dead_code)]
+
 pub fn hash_loe_g2(msg: &[u8]) -> G2Affine_bls {
     let mapper = MapToCurveBasedHasher::<
         short_weierstrass::Projective<g2::Config>,
@@ -72,6 +74,7 @@ pub fn hash_loe_g2(msg: &[u8]) -> G2Affine_bls {
     return hash_on_curve;
 }
 
+#[allow(dead_code)]
 pub fn hash_1<E: Pairing>(g_target: PairingOutput<E>) -> Vec<u8> {
     let mut uncompressed_bytes = Vec::new();
     g_target
@@ -86,6 +89,7 @@ pub fn hash_1<E: Pairing>(g_target: PairingOutput<E>) -> Vec<u8> {
     fixed_size_u8.to_vec()
 }
 
+#[allow(dead_code)]
 pub fn hash_2<E: Pairing>(
     pk: &E::G1,
     pk_0_vec: &Vec<E::G1>,
@@ -134,6 +138,8 @@ pub fn hash_2<E: Pairing>(
     let result = hasher.finalize();
     BitVec::from_bytes(&result)
 }
+
+#[allow(dead_code)]
 pub fn concatinate_str(current_round: u64, previous_signature: &str) -> String {
     let mut hasher = Sha256::default();
     hasher.update(str_to_byte(previous_signature));

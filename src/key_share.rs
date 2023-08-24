@@ -5,8 +5,8 @@ use crate::hashes::*;
 //#[allow(unused)]
 //#[allow(dead_code)]
 
-use ark_ec::{pairing::Pairing, CurveGroup, Group};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, SerializationError, Valid, Validate};
+use ark_ec::{pairing::Pairing, Group};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::io::{Read, Write};
 use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
 use ark_bls12_381::{
@@ -18,7 +18,7 @@ use ark_bn254::{Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn,  G2Affine as G2Affi
                 G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
 
 
-pub type PublicKey<C> = C;
+//pub type PublicKey<C> = C;
 pub type SecretKey<C> = <C as Group>::ScalarField;
 
 pub const K_SHARE: u32 = 2;
@@ -211,6 +211,7 @@ impl<E: Pairing> KeyShare<E> {
 
     // sk_verification
     // sk_verify
+    #[allow(unused)]
     pub fn sk_verify(
         pk: &E::G1,
         t1: &<G2Projective_bls as Group>::ScalarField,
@@ -238,6 +239,7 @@ impl<E: Pairing> KeyShare<E> {
     // /// usage: k.verify_key_share();
     // pub fn verf_key_share(&self) -> bool {
     /// usage: KeyShare::<G1Projective, G2Projective_L>::verf_key_share(k);
+     #[allow(unused)]
     pub fn key_share_verify(k: &Self, round: u64) -> bool {
         for i in 0..K_SHARE {
             if k.pk_0[i as usize] + &k.pk_1[i as usize] != *&k.pk {

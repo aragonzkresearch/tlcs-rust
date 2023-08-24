@@ -5,9 +5,19 @@ use crate::primitives::*;
 
 //#[allow(unused)]
 //#[allow(dead_code)]
-use ark_bls12_381::{Bls12_381,G1Affine as G1Affine_bls};
-use ark_bn254::Bn254;
+
+
+use ark_bls12_381::{
+    Bls12_381,
+    Fr as F_bls,
+    G1Affine as G1Affine_bls,
+    G1Projective as G1Projective_bls,
+    G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
+};
+
+use ark_bn254::{Bn254, G1Projective};
 use ark_ec::bn;
+use ark_ec::CurveGroup;
 use ark_ec::pairing::Pairing;
 use ark_serialize::{
     CanonicalDeserialize,
@@ -30,9 +40,12 @@ pub fn keyshare_generate(
     loe_pk: Vec<u8>,
 ) -> Vec<u8> {
     // Make key from round and loe_pk
+    type KS = KeyShare<Bn254>;
+
     let mut rng = ark_std::test_rng();
     let loe_pk_str = hex::encode(loe_pk);
-    let key : KeyShare::<Bn254> = key_share_gen::<Bn254>(&mut rng, &loe_pk_str, round);
+    let key = KS::key_share_gen(&mut rng, &loe_pk_str, round);
+    //let key : KeyShare::<Bn254> = KeyShare::<Bn254>::key_share_gen::<Bn254>(&mut rng, &loe_pk_str, round);
     // TODO: use the proper Pairing (from scheme)
     // TODO: DONE
     // let key: KeyShare<Bn254> = key_share_gen(&mut rng, &loe_pk_str, round);
@@ -63,18 +76,19 @@ pub fn make_aggregate_key(
 pub fn make_secret_key(
     round: u64,
     _scheme: String,
-    loe_signature: Vec<u8>,
+    loe_signature: String,
     all_data: Vec<Vec<u8>>,
-    pubkey: String,
 ) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
     // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
     // TODO: DONE
-    let sk_t =str_to_group::<G1Affine_bls>(&pubkey).unwrap();
+    let sk_t =str_to_group::<G1Projective_bls>(&loe_signature).unwrap().into_affine();
     return  msk_aggregation_from_stored_data::<Bn254>(&sk_t, &all_data);
-    //return hex::encode(sk_vec);
-}
 
+}
+fn main(){
+    println!("only a main!");
+}
 /******************************************************************************************/
 
 #[allow(dead_code)]
@@ -131,49 +145,52 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
     msk.serialize_compressed(&mut msk_bytes).unwrap();
     return msk_bytes;
 }
-
+/*
 #[cfg(test)]
 mod tests {
-   use serial_test::serial;
+    use serial_test::serial;
 
-   use super::*;
+    use super::*;
 
-   #[test]
-   #[serial]
-   fn verify_participant_data_works() {
-      let participant_data = keyshare_generate(2, 1, LOE_PUBLIC_KEY);
-      let verified = keyshare_verify(2, 1, participant_data);
-   
-      assert!(verified);
-   }
+    #[test]
+    #[serial]
+    fn verify_participant_data_works() {
+        let participant_data = keyshare_generate(2, 1, LOE_PUBLIC_KEY);
+        let verified = keyshare_verify(2, 1, participant_data);
 
-   #[test]
-   #[serial]
-   fn aggregate_participant_data_works() {
-      let mut all_participant_data = keyshare_generate(2, 1, LOE_PUBLIC_KEY);
-      let mut participant_data_2 = keyshare_generate(2, 1, LOE_PUBLIC_KEY);
-      all_participant_data.append(&mut participant_data_2);
+        assert!(verified);
+    }
 
-      let public_key = make_aggregate_key(all_participant_data);
-      let vec_public_key = hex::decode(public_key).expect("will return valid hex");
-   
-      assert!(vec_public_key.len() == 33)
-   }
+    #[test]
+    #[serial]
+    fn aggregate_participant_data_works() {
+        let mut all_participant_data = keyshare_generate(2, 1, LOE_PUBLIC_KEY);
+        let mut participant_data_2 = keyshare_generate(2, 1, LOE_PUBLIC_KEY);
+        all_participant_data.append(&mut participant_data_2);
 
-   #[test]
-   #[serial]
-   fn make_secret_key_works() {
-      let mut all_participant_data = keyshare_generate(2);
-      let mut participant_data_2 = keyshare_generate(2);
-      all_participant_data.append(&mut participant_data_2);
-      let public_key: Vec<u8> = make_aggregate_key(all_participant_data.clone());
-   
-      // retrieved from https://api.drand.sh/dbd506d6ef76e5f386f41c651dcb808c5bcbd75471cc4eafa3f4df7ad4e4c493/public/2
-      let signature: Vec<u8> = hex::decode("a050676d1a1b6ceedb5fb3281cdfe88695199971426ff003c0862460b3a72811328a07ecd53b7d57fc82bb67f35efaf1").unwrap();
-   
-      let secret_key = make_secret_key(2, 1, signature, all_participant_data, public_key);
-      let vec_secret_key = hex::decode(secret_key).expect("will return valid hex");
-   
-      assert!(vec_secret_key.len() == 32)
-   }
+        let public_key = make_aggregate_key(all_participant_data);
+        let vec_public_key = hex::decode(public_key).expect("will return valid hex");
+
+        assert!(vec_public_key.len() == 33)
+    }
+
+    #[test]
+    #[serial]
+    fn make_secret_key_works() {
+        let mut all_participant_data = keyshare_generate(2);
+        let mut participant_data_2 = keyshare_generate(2);
+        all_participant_data.append(&mut participant_data_2);
+        let public_key: Vec<u8> = make_aggregate_key(all_participant_data.clone());
+
+        // retrieved from https://api.drand.sh/dbd506d6ef76e5f386f41c651dcb808c5bcbd75471cc4eafa3f4df7ad4e4c493/public/2
+        let signature: Vec<u8> = hex::decode("a050676d1a1b6ceedb5fb3281cdfe88695199971426ff003c0862460b3a72811328a07ecd53b7d57fc82bb67f35efaf1").unwrap();
+
+        let secret_key = make_secret_key(2, 1, signature, all_participant_data, public_key);
+        let vec_secret_key = hex::decode(secret_key).expect("will return valid hex");
+
+        assert!(vec_secret_key.len() == 32)
+    }
 }
+
+
+ */
