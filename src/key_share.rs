@@ -326,8 +326,7 @@ mod tests {
         type KS = KeyShare<Bn254>; // "type alias"
 
         let mut rng = ark_std::test_rng();
-        //let pk_loe = G2Projective_bls::generator();
-        let pk_loe_str = "868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31";
+        let pk_loe_str = "a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
         let round = 34;
 
         let ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_loe_str, round);
