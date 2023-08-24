@@ -71,46 +71,6 @@ pub fn hash_loe_g2(msg: &[u8]) -> G2Affine_bls {
     .into_affine();
     return hash_on_curve;
 }
-/*
-   let mapper = MapToCurveBasedHasher::<
-       short_weierstrass::Projective<g2::Config>,
-       DefaultFieldHasher<sha2::Sha256, 128>,
-       WBMap<g2::Config>,
-   >::new(dst)
-       .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
-       .unwrap();
-   let hash_on_curve = G2Projective::from(
-       mapper
-           .hash(msg)
-           .map_err(|_| anyhow!("hash cannot be mapped to G2"))
-           .unwrap(),
-   )
-       .into_affine();
-   return hash_on_curve;
-*/
-/*
-pub fn hash_loe_g2<E : Pairing>(dst: &[u8], msg: &[u8]) -> E::G2Affine
-    where <E as Pairing>::G2Prepared: From<ark_ec::short_weierstrass::Affine<ark_bls12_381::g2::Config>>,
-          <E as Pairing>::G2Affine: From<<E as Pairing>::G2Prepared>
-{
-    let mapper = MapToCurveBasedHasher::<
-        short_weierstrass::Projective<g2::Config>,
-        DefaultFieldHasher<sha2::Sha256, 128>,
-        WBMap<g2::Config>,
-    >::new(dst)
-        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
-        .unwrap();
-    let hash_on_curve = E::G2Prepared::from(
-        mapper
-            .hash(msg)
-            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
-            .unwrap(),
-    ).into();
-    return hash_on_curve;
-}
-
-
- */
 
 pub fn hash_1<E: Pairing>(g_target: PairingOutput<E>) -> Vec<u8> {
     let mut uncompressed_bytes = Vec::new();
@@ -136,7 +96,6 @@ pub fn hash_2<E: Pairing>(
     y_1: &Vec<Vec<u8>>,
 ) -> bit_vec::BitVec {
     let mut hasher = Sha256::new();
-    //hasher.update(party.to_be_bytes());
 
     let mut uncompressed_bytes = Vec::new();
 
