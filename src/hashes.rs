@@ -24,7 +24,7 @@ use sha2::{Digest, Sha256};
 use bit_vec::BitVec;
 
 pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
-pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
+//pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
 //
 // 1
 pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_bls {
@@ -44,8 +44,7 @@ pub fn hash_loe_g1( msg: &[u8]) -> G1Affine_bls {
         .into_affine();
     return hash_on_curve;
 }
-
-// 1
+#[allow(unused)]
 pub fn hash_loe_g2( msg: &[u8]) -> G2Affine_bls {
     let mapper = MapToCurveBasedHasher::<
         short_weierstrass::Projective<g2::Config>,
@@ -64,53 +63,7 @@ pub fn hash_loe_g2( msg: &[u8]) -> G2Affine_bls {
     return hash_on_curve;
 }
 
-//
-
-
-
-
-
-/*
-    let mapper = MapToCurveBasedHasher::<
-        short_weierstrass::Projective<g2::Config>,
-        DefaultFieldHasher<sha2::Sha256, 128>,
-        WBMap<g2::Config>,
-    >::new(dst)
-        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
-        .unwrap();
-    let hash_on_curve = G2Projective::from(
-        mapper
-            .hash(msg)
-            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
-            .unwrap(),
-    )
-        .into_affine();
-    return hash_on_curve;
- */
-/*
-pub fn hash_loe_g2<E : Pairing>(dst: &[u8], msg: &[u8]) -> E::G2Affine
-    where <E as Pairing>::G2Prepared: From<ark_ec::short_weierstrass::Affine<ark_bls12_381::g2::Config>>,
-          <E as Pairing>::G2Affine: From<<E as Pairing>::G2Prepared>
-{
-    let mapper = MapToCurveBasedHasher::<
-        short_weierstrass::Projective<g2::Config>,
-        DefaultFieldHasher<sha2::Sha256, 128>,
-        WBMap<g2::Config>,
-    >::new(dst)
-        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
-        .unwrap();
-    let hash_on_curve = E::G2Prepared::from(
-        mapper
-            .hash(msg)
-            .map_err(|_| anyhow!("hash cannot be mapped to G2"))
-            .unwrap(),
-    ).into();
-    return hash_on_curve;
-}
-
-
- */
-
+#[allow(unused)]
 pub fn hash_1<E : Pairing>(
     g_target: PairingOutput<E>
 ) -> Vec<u8> {
@@ -126,7 +79,7 @@ pub fn hash_1<E : Pairing>(
     fixed_size_u8.copy_from_slice(result.as_ref());
     fixed_size_u8.to_vec()
 }
-
+#[allow(unused)]
 pub fn hash_2<E : Pairing>(
               pk: &E::G1, pk_0_vec: &Vec<E::G1>,
               pk_1_vec : &Vec<E::G1>,
@@ -136,8 +89,6 @@ pub fn hash_2<E : Pairing>(
               y_1: &Vec<Vec<u8>>
 ) -> bit_vec::BitVec {
     let mut hasher = Sha256::new();
-    //hasher.update(party.to_be_bytes());
-
     let mut compressed_bytes = Vec::new();
 
     pk.serialize_compressed(&mut compressed_bytes).unwrap();

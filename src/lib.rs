@@ -1,6 +1,6 @@
-mod primitives;
 mod hashes;
 mod key_share;
+mod primitives;
 mod key_share_stored;
 mod bls_verify;
 
@@ -19,30 +19,24 @@ mod tests {
     use hex::ToHex;
     use std::fmt;
     use ark_ff::Field;
-    use rand::{thread_rng, Rng};
+    use rand::Rng;
     use ark_bls12_381::{
         Bls12_381,Fr as F_bls,
         G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
         G2Projective as G2Projective_bls, G1Projective as G1Projective_bls,
     };
-    use ark_bn254::{Bn254, Fr as Fr_bn, G1Affine as G1Affine_bn,  G2Affine as G2Affine_bn,
-                    G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
+    use ark_bn254::{G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
 
     /// test for baby jubju curve
-    ///
 
     #[test]
     
     fn bn256_group_to_hex_1(){
-        for i in 0..10 {
-            dbg!(i);
+        for _i in 0..10 {
             let mut rng = rand::thread_rng();
             let g = G1Projective_bn::rand(&mut rng);
-            dbg!(&g);
             let g_str = group_to_hex::<G1Projective_bn>(&g);
-            //dbg!(&g_str);
             let g_str_backto_group = str_to_group::<G1Projective_bn>(&g_str).unwrap();
-            //dbg!(&g_str_backto_group);
             assert_eq!(g,g_str_backto_group);
         }
     }
@@ -50,14 +44,11 @@ mod tests {
     #[test]
     
     fn bn256_group_to_hex_2(){
-        for i in 0..10 {
+        for _i in 0..10 {
             let mut rng = rand::thread_rng();
             let g = G2Projective_bn::rand(&mut rng);
-            dbg!(&g);
             let g_str = group_to_hex::<G2Projective_bn>(&g);
-            //dbg!(&g_str);
             let g_str_backto_group = str_to_group::<G2Projective_bn>(&g_str).unwrap();
-            //dbg!(&g_str_backto_group);
             assert_eq!(g,g_str_backto_group);
         }
     }
@@ -66,14 +57,11 @@ mod tests {
     #[test]
     
     fn bls_group_to_hex_1(){
-        for i in 0..10 {
+        for _i in 0..10 {
             let mut rng = rand::thread_rng();
             let g = G1Projective_bls::generator();
-            //dbg!(&g);
             let g_str = group_to_hex::<G1Projective_bls>(&g);
-            //dbg!(&g_str);
             let g_str_backto_group = str_to_group::<G1Projective_bls>(&g_str).unwrap();
-            //dbg!(&g_str_backto_group);
             assert_eq!(g,g_str_backto_group)
         }
     }
@@ -81,14 +69,11 @@ mod tests {
     #[test]
     
     fn bls_group_to_hex_2(){
-        for i in 0..10 {
+        for _i in 0..10 {
             let mut rng = rand::thread_rng();
             let g = G2Projective_bls::generator();
-            //dbg!(&g);
             let g_str = group_to_hex::<G2Projective_bls>(&g);
-            //dbg!(&g_str);
             let g_str_backto_group = str_to_group::<G2Projective_bls>(&g_str).unwrap();
-            //dbg!(&g_str_backto_group);
             assert!(str_to_group::<G2Projective_bls>(&g_str).is_ok(), "Expected Ok(G), but got Err(InvalidPoint).");
             assert_eq!(g,g_str_backto_group)
         }
@@ -105,7 +90,7 @@ mod tests {
     #[test]
     
     fn xor_test(){
-        for i in 0..10 {
+        for _i in 0..10 {
             let mut rng = rand::thread_rng();
             let random_vec_a: Vec<u8> = (0..10).map(|_| rng.gen()).collect();
             let random_vec_b: Vec<u8> = (0..7).map(|_| rng.gen()).collect();

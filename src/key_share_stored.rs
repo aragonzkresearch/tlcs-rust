@@ -14,7 +14,7 @@ use ark_std::Zero;
 /******************************************************************************************
 ** The four functions needed by the chain
 ******************************************************************************************/
-const SECURITY_PARAM : usize = 2;
+
 //pub fn keyshare_generate(round: u64, _scheme: String, loe_pk: Vec<u8>) -> Vec<u8> {
 #[allow(unused)]
 pub fn keyshare_generate(pk_loe: String, round: u64, _scheme: String, sec_param : usize) -> Vec<u8> {
@@ -22,13 +22,8 @@ pub fn keyshare_generate(pk_loe: String, round: u64, _scheme: String, sec_param 
     type TLCS_Key_Share = KeyShare<Bn254>;
 
     let mut rng = ark_std::test_rng();
-    //let loe_pk_str = hex::encode(loe_pk);
     let key = TLCS_Key_Share::key_share_gen(&mut rng, &pk_loe, round, sec_param);
-    //let key : KeyShare::<Bn254> = KeyShare::<Bn254>::key_share_gen::<Bn254>(&mut rng, &loe_pk_str, round);
     // TODO: use the proper Pairing (from scheme)
-    // let key: KeyShare<Bn254> = key_share_gen(&mut rng, &loe_pk_str, round);
-    //println!("key_share_store  in line 31");
-   //dbg!(&key);
 
     return key_share_store::<Bn254>(&key);
 }
@@ -39,7 +34,6 @@ pub fn keyshare_verify(pk_loe: String, round: u64, _scheme: String, data: Vec<u8
     return verify_key_share_store::<Bn254>( pk_loe.into(),data, round, sec_param);
 }
 
-//pub fn make_aggregate_key(round: u64, _scheme: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
 #[allow(unused)]
 pub fn make_aggregate_key(pk_loe: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
@@ -55,16 +49,11 @@ pub fn make_secret_key(
 ) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
     // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
-   // println!("step 4.1 ");
     let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
         .unwrap()
         .into_affine();
-   // println!("step 4.2 = sk_t  {} ", &sk_t);
-
-
-    return msk_aggregation_from_stored_data::<Bn254>(&sk_t, &all_data);
+     return msk_aggregation_from_stored_data::<Bn254>(&sk_t, &all_data);
 }
-
 
 #[allow(dead_code)]
 fn key_share_store<E: Pairing>(key_share: &KeyShare<E>) -> Vec<u8> {
@@ -107,12 +96,9 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
    // println!("step 4.3- inside the secodn one ");
 
     let mut msk = E::ScalarField::zero();
-    println!("step 4.4 msk ={} ", msk);
     for k in key_shares {
-        println!("step 4.5 k ={:?} ", k);
         let key_share = KeyShare::<E>::deserialize_compressed(k.as_slice())
             .expect("Deserialization should succeed");
-        println!("step 4.6 keyshare ={:?} ", key_share);
 
         let z_0 = Bls12_381::pairing(sk_t, &key_share.t_0[0]);
         let z_1 = Bls12_381::pairing(sk_t, &key_share.t_1[0]);
@@ -121,13 +107,10 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
         let sk1 = xor(&hash_1::<Bls12_381>(z_1), &key_share.y_1[0]);
         let sk_0 = E::ScalarField::deserialize_compressed(&*sk0).unwrap();
         let sk_1 = E::ScalarField::deserialize_compressed(&*sk1).unwrap();
-        println!("step 4.7 sk0 ={} ", sk_0);
-        println!("step 4.8 sk1 ={} ", sk_0);
 
         msk = msk + sk_0;
         msk = msk + sk_1;
     }
-    println!("step 4.4 msk ={} ", msk);
     let mut msk_bytes = Vec::new();
     msk.serialize_compressed(&mut msk_bytes).unwrap();
    // println!("step 4.4 msk_bytes ={:?} ", msk_bytes);
@@ -147,16 +130,13 @@ mod tests {
     const SCHEME: &str = "BJJ";
 
     #[test]
-   
     fn verify_participant_data_works() {
         let participant_data = keyshare_generate(LOE_PUBLIC_KEY.into(),ROUND, SCHEME.to_string(), SECURITY_PARAM);
         let verified = keyshare_verify(LOE_PUBLIC_KEY.into(),ROUND, SCHEME.to_string(), participant_data, SECURITY_PARAM);
-
         assert!(verified);
     }
 
     #[test]
-   
     fn aggregate_participant_data_works() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(keyshare_generate(
@@ -174,7 +154,6 @@ mod tests {
 
         let public_key = make_aggregate_key(LOE_PUBLIC_KEY.into(),&all_participant_data);
         let str_public_key = hex::encode(&public_key);
-        //println!("vec_public_key.len() = {}", str_public_key.len());
         assert!(public_key.len() == 32);
         assert!(str_to_group::<G1Projective_bn>(&str_public_key).is_ok(),"Expected Ok, but got Err");
     }
@@ -196,14 +175,26 @@ mod tests {
         ));
 
         let secret_key = make_secret_key(ROUND, SCHEME.to_string(), SIGNATURE.to_string(), all_participant_data);
-        println!("len_secret key BYTE = {:?}", secret_key);
         let vec_secret_key = hex::encode(secret_key);
-        println!("len_secret key BYTE = {:?}", vec_secret_key);
-        let f = str_to_field::<Fr_bn>(&vec_secret_key);
-        println!("msk = {}", f);
-
-        println!("vec_secret_key {} ",vec_secret_key.len());
+        let _f = str_to_field::<Fr_bn>(&vec_secret_key);
         assert!(vec_secret_key.len() == 64);
+    }
+
+    #[test]
+    fn mpk_and_msk_are_correct(){
+        let mut all_participant_data: Vec<Vec<u8>> = vec![];
+        all_participant_data.push(keyshare_generate(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            SCHEME.to_string(),
+            SECURITY_PARAM
+        ));
+        all_participant_data.push(keyshare_generate(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            SCHEME.to_string(),
+            SECURITY_PARAM
+        ));
 
     }
 }

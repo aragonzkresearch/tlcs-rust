@@ -7,7 +7,7 @@ use crate::primitives::*;
 use ark_bls12_381::{Bls12_381, Fr as Fr_bls, G1Affine as G1Affine_bls, G2Projective as G2Projective_bls,  G2Affine as G2Affine_bls};
 use ark_ec::{pairing::Pairing, Group, CurveGroup};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::io::Read;
+//use ark_std::io::Read;
 use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
 
 
@@ -45,7 +45,6 @@ impl<E: Pairing> KeyShare<E> {
 
         let mut t_vector_0: Vec<SecretKey<G2Projective_bls>> = Vec::new();
         let mut t_vector_1: Vec<SecretKey<G2Projective_bls>> = Vec::new();
-        let mut t_vector: Vec<SecretKey<G2Projective_bls>> = Vec::new();
 
         let mut y_vector_0: Vec<Vec<u8>> = Vec::new();
         let mut y_vector_1: Vec<Vec<u8>> = Vec::new();
@@ -80,8 +79,6 @@ impl<E: Pairing> KeyShare<E> {
 
             let z_0 = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(&t_0));
             let z_1 = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(&t_1));
-            println!("gen : z_0 = {}", z_0);
-            println!("gen : z_1 = {}", z_1);
 
             let sk_ser_0 = serialize_compressed_f(&sk_0);
             let sk_ser_1 = serialize_compressed_f(&sk_1);
@@ -141,7 +138,7 @@ impl<E: Pairing> KeyShare<E> {
             pk: public_key,
             pk_0: pk_vector_0,
             pk_1: pk_vector_1,
-            t: t_vector,
+            t:    t_vector,
             t_0: T_vector_0,
             t_1: T_vector_1,
             y_0: y_vector_0,
@@ -266,25 +263,44 @@ impl<E: Pairing> KeyShare<E> {
         return msk;
     }
 }
-/*
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_bn254::{Bn254, G1Projective as G1Projective_bn};
+    use ark_bls12_381::{Bls12_381, Fr as Fr_bls, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls, G2Projective as G2Projective_bls,  G2Affine as G2Affine_bls};
 
-    //use ark_bls12_381::Bls12_381;
-    use ark_bn254::Bn254;
+    const LOE_PUBLIC_KEY: &str = "a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
+    const SIGNATURE: &str = "9544ddce2fdbe8688d6f5b4f98eed5d63eee3902e7e162050ac0f45905a55657714880adabe3c3096b92767d886567d0";
+    const ROUND : u64 = 1;
+    const SECURITY_PARAM : usize = 2;
+
 
     #[test]
-    fn test_aggregation() {
-        //type KS = KeyShare<Bn254>; // "type alias"
+    fn aggregation_is_correct(){
+
         let mut rng = ark_std::test_rng();
-        let pk_loe_str = "a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
-        let round = 34;
 
-        let _ks = KeyShare::<Bn254>::key_share_gen(&mut rng, &pk_loe_str, round);
+        type TLCS_Key_Share = KeyShare<Bn254>;
+        let mut all_key_share : Vec<TLCS_Key_Share> = Vec::new();
 
-        todo!();
+        for _i in 0..2{
+            let ks= TLCS_Key_Share::key_share_gen(&mut rng, &LOE_PUBLIC_KEY, ROUND, SECURITY_PARAM );
+            let verified = TLCS_Key_Share::key_share_verify(&LOE_PUBLIC_KEY,&ks, ROUND,SECURITY_PARAM);
+            all_key_share.push(ks);
+            assert!(verified);
+        }
+        let pk = &all_key_share[0].pk + &all_key_share[1].pk;
+        let sk_round = str_to_group::<G1Projective_bls>(SIGNATURE).unwrap().into_affine();
+        //println!("sk_round = {}", sk_round);
+        let msk = TLCS_Key_Share::msk_aggregation(&sk_round, &all_key_share);
+        let mpk = TLCS_Key_Share::mpk_aggregation(&all_key_share);
+        let g = G1Projective_bn::generator();
+        let mpk_test = g.mul(&msk);
+        assert_eq!(mpk,mpk_test);
+        assert_eq!(pk,mpk);
     }
-}
 
- */
+
+
+}

@@ -9,7 +9,7 @@ use ark_bls12_381::{
     G1Affine as G1Affine_bls, G2Affine as G2Affine_bls,
     G1Projective as G1Projective_bls, G2Projective as G2Projective_bls,
 };
-use ark_ec::{pairing::Pairing, Group, CurveGroup};
+use ark_ec::{pairing::Pairing, CurveGroup};
 use ark_ec::AffineRepr;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::io::Read;
@@ -21,6 +21,7 @@ use hex::ToHex;
 use sha2::{Digest, Sha256};
 use bit_vec::BitVec;
 
+#[allow(unused)]
 pub fn bls_verify_1(pk: &str, message: &[u8], signature: &str)-> bool{
     let pk_affine_1 = str_to_group::<G1Projective_bls>(pk).unwrap().into_affine();
     let signature_affine_2 = str_to_group::<G2Projective_bls>(signature).unwrap().into_affine();
@@ -30,6 +31,7 @@ pub fn bls_verify_1(pk: &str, message: &[u8], signature: &str)-> bool{
     let right_hand = Bls12_381::pairing( &pk_affine_1 , &hash_on_curve_2);
     return left_hand == right_hand;
 }
+#[allow(unused)]
 pub fn bls_verify_2(pk: &str, message: &[u8], signature: &str)-> bool{
     let pk_affine_2 = str_to_group::<G2Projective_bls>(pk).unwrap().into_affine();
     let signature_affine_1 = str_to_group::<G1Projective_bls>(signature).unwrap().into_affine();
@@ -39,7 +41,7 @@ pub fn bls_verify_2(pk: &str, message: &[u8], signature: &str)-> bool{
     let right_hand = Bls12_381::pairing(  &hash_on_curve_1, &pk_affine_2 );
     return left_hand == right_hand;
 }
-
+#[allow(unused)]
 pub fn concatinate(current_round: u64, previous_signature: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::default();
     hasher.update(previous_signature);
