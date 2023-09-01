@@ -75,11 +75,11 @@ impl<E: Pairing> KeyShare<E> {
 
             T_vector_0.push(bls_generator_2.mul(&t_0));
             T_vector_1.push(bls_generator_2.mul(&t_1));
-            println!("gen : t_0 = {}", bls_generator_2.mul(&t_0));
-            println!("gen : t_1 = {}", bls_generator_2.mul(&t_1));
+            //println!("gen : t_0 = {}", bls_generator_2.mul(&t_0));
+            //println!("gen : t_1 = {}", bls_generator_2.mul(&t_1));
 
-            let z_0 = Bls12_381::pairing(hash_loe_g1(&round_to_bytes(round)), pk_loe.mul(&t_0));
-            let z_1 = Bls12_381::pairing(hash_loe_g1(&round_to_bytes(round)), pk_loe.mul(&t_1));
+            let z_0 = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(&t_0));
+            let z_1 = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(&t_1));
             println!("gen : z_0 = {}", z_0);
             println!("gen : z_1 = {}", z_1);
 
@@ -178,7 +178,7 @@ impl<E: Pairing> KeyShare<E> {
             return false;
         }
 
-        let z = Bls12_381::pairing(hash_loe_g1(&round_to_bytes(round)), pk_loe.mul(t));
+        let z = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(t));
         let sk0 = xor(&hash_1(z), y);
         let sk =<E::G1 as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
         if *pk != pairing_generator_1.mul(sk){
@@ -238,27 +238,31 @@ impl<E: Pairing> KeyShare<E> {
 
     #[allow(unused)]
     pub fn msk_aggregation(round_secret_key: &G1Affine_bls, key_shares: &Vec<Self>) -> E::ScalarField {
+        //let pk_loe = str_to_group::<G2Projective_bls>(pk_loe_str).unwrap();
         let mut msk = E::ScalarField::zero();
         println!("round_secret_key {}",round_secret_key);
         for i in 0..key_shares.len() {
+            println!(" msk key {}",i);
             let z_0 = Bls12_381::pairing(round_secret_key, &key_shares[i].t_0[0]);
             let z_1 = Bls12_381::pairing(round_secret_key, &key_shares[i].t_1[0]);
-            println!("z_0 = {}", z_0);
-            println!("z_1 = {}", z_1);
+            println!("msk z_0 = {}", z_0);
+            println!("msk z_1 = {}", z_1);
             println!("\n");
-            println!("t_0 = {}", &key_shares[i].t_0[0]);
-            println!("t_1 = {}", &key_shares[i].t_1[0]);
+            //println!("msk t_0 = {}", &key_shares[i].t_0[0]);
+            //println!("msk t_1 = {}", &key_shares[i].t_1[0]);
 
             let sk0 = xor(&hash_1::<Bls12_381>(z_0), &key_shares[i].y_0[0]);
             let sk1 = xor(&hash_1::<Bls12_381>(z_1), &key_shares[i].y_1[0]);
-            println!("sk_0 = {:?}", sk0);
-            println!("sk_1 = {:?}", sk1);
+            //println!("sk_0 = {:?}", sk0);
+            //println!("sk_1 = {:?}", sk1);
 
             let sk_0 = <E::G1 as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
             let sk_1 = <E::G1 as Group>::ScalarField::deserialize_compressed(&*sk1).unwrap();
             msk = msk + sk_0;
             msk = msk + sk_1;
+
         }
+        println!("msk = {:?}", msk);
         return msk;
     }
 }

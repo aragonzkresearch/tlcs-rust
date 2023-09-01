@@ -61,6 +61,10 @@ pub fn round_to_bytes(round: u64) -> [u8; 8] { // test : NOT DONE
 pub fn str_to_byte(g_str: &str) -> Vec<u8> { // test : NOT DONE
     hex::decode(g_str).unwrap()
 }
+pub fn str_to_field<F : Field>(f_str : &str) -> F {
+    let f_bytes = hex::decode(f_str).unwrap();
+    F::deserialize_compressed(&*f_bytes).unwrap()
+}
 
 ///
 /// Consider the case with tow different length vectors

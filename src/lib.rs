@@ -2,6 +2,7 @@ mod primitives;
 mod hashes;
 mod key_share;
 mod key_share_stored;
+mod bls_verify;
 
 use primitives::*;
 use crate::hashes::*;
@@ -31,6 +32,7 @@ mod tests {
     ///
 
     #[test]
+    
     fn bn256_group_to_hex_1(){
         for i in 0..10 {
             dbg!(i);
@@ -46,6 +48,7 @@ mod tests {
     }
 
     #[test]
+    
     fn bn256_group_to_hex_2(){
         for i in 0..10 {
             let mut rng = rand::thread_rng();
@@ -61,6 +64,7 @@ mod tests {
     /// test for bls group
 
     #[test]
+    
     fn bls_group_to_hex_1(){
         for i in 0..10 {
             let mut rng = rand::thread_rng();
@@ -75,6 +79,7 @@ mod tests {
     }
 
     #[test]
+    
     fn bls_group_to_hex_2(){
         for i in 0..10 {
             let mut rng = rand::thread_rng();
@@ -90,6 +95,7 @@ mod tests {
     }
 
     #[test]
+    
     fn bls_str_to_group_bls() {
         let g = "868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31";
         let g_porjective = str_to_group::<G1Projective_bls>(&g);
@@ -97,6 +103,7 @@ mod tests {
         assert_eq!(g_str_projective, g);
     }
     #[test]
+    
     fn xor_test(){
         for i in 0..10 {
             let mut rng = rand::thread_rng();
