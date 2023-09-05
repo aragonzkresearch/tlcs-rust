@@ -20,9 +20,8 @@ use ark_std::Zero;
 ** The four functions needed by the chain
 ******************************************************************************************/
 
-//pub fn keyshare_generate(round: u64, _scheme: String, loe_pk: Vec<u8>) -> Vec<u8> {
 #[allow(unused)]
-pub fn keyshare_generate(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
+pub fn make_keyshare(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
     // Make key from round and loe_pk
     type TlcsKeyShare = KeyShare<Bn254>;
 
@@ -34,7 +33,7 @@ pub fn keyshare_generate(pk_loe: String, round: u64, _scheme: String, sec_param:
 }
 
 #[allow(unused)]
-pub fn keyshare_verify(
+pub fn verify_keyshare(
     pk_loe: String,
     round: u64,
     _scheme: String,
@@ -46,7 +45,7 @@ pub fn keyshare_verify(
 }
 
 #[allow(unused)]
-pub fn make_aggregate_key(pk_loe: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_public_key(pk_loe: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
     return mpk_aggregation_from_stored_data::<Bn254>(all_data);
 }
@@ -67,6 +66,23 @@ pub fn make_secret_key(
 }
 
 #[allow(dead_code)]
+pub fn loe_signature_is_valid(round: u64, signature: String, loe_pk: String) -> bool {
+    let pk_affine_2 = str_to_group::<G2Projective_bls>(loe_pk.as_str())
+        .unwrap()
+        .into_affine();
+    let signature_affine_1 = str_to_group::<G1Projective_bls>(signature.as_str())
+        .unwrap()
+        .into_affine();
+    let msg = message(round);
+
+    let hash_on_curve_1 = hash_loe_g1(&msg);
+
+    let left_hand = Bls12_381::pairing(&signature_affine_1, G2Affine_bls::generator());
+    let right_hand = Bls12_381::pairing(&hash_on_curve_1, &pk_affine_2);
+    return left_hand == right_hand;
+}
+
+#[allow(dead_code)]
 fn key_share_store<E: Pairing>(key_share: &KeyShare<E>) -> Vec<u8> {
     // println!("key_share_store : {:?}", key_share);
     let mut key_share_serialized_compressed = Vec::new();
@@ -78,7 +94,7 @@ fn key_share_store<E: Pairing>(key_share: &KeyShare<E>) -> Vec<u8> {
 }
 
 #[allow(dead_code)]
-pub fn verify_key_share_store<E: Pairing>(
+fn verify_key_share_store<E: Pairing>(
     pk_loe: String,
     key_share_stored: Vec<u8>,
     round: u64,
@@ -90,7 +106,7 @@ pub fn verify_key_share_store<E: Pairing>(
 }
 
 #[allow(dead_code)]
-pub fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -> Vec<u8> {
+fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -> Vec<u8> {
     //type KS = KeyShare<E>;
     let mut mpk = E::G1::zero();
     for k in key_shares {
@@ -105,7 +121,7 @@ pub fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -
 }
 
 #[allow(dead_code)]
-pub fn msk_aggregation_from_stored_data<E: Pairing>(
+fn msk_aggregation_from_stored_data<E: Pairing>(
     sk_t: &G1Affine_bls,
     key_shares: &Vec<Vec<u8>>,
 ) -> Vec<u8> {
@@ -133,23 +149,6 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
     return msk_bytes;
 }
 
-#[allow(dead_code)]
-pub fn loe_signature_is_valid(round: u64, signature: String, loe_pk: String) -> bool {
-    let pk_affine_2 = str_to_group::<G2Projective_bls>(loe_pk.as_str())
-        .unwrap()
-        .into_affine();
-    let signature_affine_1 = str_to_group::<G1Projective_bls>(signature.as_str())
-        .unwrap()
-        .into_affine();
-    let msg = message(round);
-
-    let hash_on_curve_1 = hash_loe_g1(&msg);
-
-    let left_hand = Bls12_381::pairing(&signature_affine_1, G2Affine_bls::generator());
-    let right_hand = Bls12_381::pairing(&hash_on_curve_1, &pk_affine_2);
-    return left_hand == right_hand;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,13 +169,13 @@ mod tests {
 
     #[test]
     fn verify_participant_data_works() {
-        let participant_data = keyshare_generate(
+        let participant_data = make_keyshare(
             LOE_PUBLIC_KEY.into(),
             ROUND,
             SCHEME.to_string(),
             SECURITY_PARAM,
         );
-        let verified = keyshare_verify(
+        let verified = verify_keyshare(
             LOE_PUBLIC_KEY.into(),
             ROUND,
             SCHEME.to_string(),
@@ -189,20 +188,20 @@ mod tests {
     #[test]
     fn aggregate_participant_data_works() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
-        all_participant_data.push(keyshare_generate(
+        all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
             2,
             SCHEME.to_string(),
             SECURITY_PARAM,
         ));
-        all_participant_data.push(keyshare_generate(
+        all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
             2,
             SCHEME.to_string(),
             SECURITY_PARAM,
         ));
 
-        let public_key = make_aggregate_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
+        let public_key = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
         let str_public_key = hex::encode(&public_key);
         assert!(public_key.len() == 32);
         assert!(
@@ -214,13 +213,13 @@ mod tests {
     #[test]
     fn make_secret_key_works() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
-        all_participant_data.push(keyshare_generate(
+        all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
             ROUND,
             SCHEME.to_string(),
             SECURITY_PARAM,
         ));
-        all_participant_data.push(keyshare_generate(
+        all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
             ROUND,
             SCHEME.to_string(),
@@ -241,18 +240,19 @@ mod tests {
     #[test]
     fn mpk_and_msk_are_correct() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
-        all_participant_data.push(keyshare_generate(
+        all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
             ROUND,
             SCHEME.to_string(),
             SECURITY_PARAM,
         ));
-        all_participant_data.push(keyshare_generate(
+        all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
             ROUND,
             SCHEME.to_string(),
             SECURITY_PARAM,
         ));
+        // TODO: make a test to encrypt/decrypt
     }
 
     #[test]

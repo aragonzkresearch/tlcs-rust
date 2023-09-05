@@ -1,7 +1,7 @@
 mod bls_verify;
+pub mod chain_functions;
 mod hashes;
 mod key_share;
-pub mod key_share_stored;
 mod primitives;
 
 //use crate::hashes::*;
