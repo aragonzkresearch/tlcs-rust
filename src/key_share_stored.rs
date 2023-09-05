@@ -125,8 +125,22 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
     }
     let mut msk_bytes = Vec::new();
     msk.serialize_compressed(&mut msk_bytes).unwrap();
-    // println!("step 4.4 msk_bytes ={:?} ", msk_bytes);
+    // printlnb !("step 4.4 msk_bytes ={:?} ", msk_bytes);
     return msk_bytes;
+}
+
+pub fn loe_signature_is_valid(round: u64, signature: String , loe_pk: String) -> bool{
+    let pk_affine_2 = str_to_group::<G2Projective_bls>(loe_pk.as_str()).unwrap().into_affine();
+    let signature_affine_1 = str_to_group::<G1Projective_bls>(signature.as_str())
+        .unwrap()
+        .into_affine();
+    let msg = message(round);
+
+    let mut hash_on_curve_1 = hash_loe_g1(&msg);
+
+    let left_hand = Bls12_381::pairing(&signature_affine_1, G2Affine_bls::generator());
+    let right_hand = Bls12_381::pairing(&hash_on_curve_1, &pk_affine_2);
+    return left_hand == right_hand;
 }
 
 #[cfg(test)]
