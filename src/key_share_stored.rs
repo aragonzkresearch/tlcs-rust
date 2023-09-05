@@ -2,9 +2,13 @@ use crate::hashes::*;
 use crate::key_share::*;
 use crate::primitives::*;
 
-use ark_bls12_381::{Bls12_381, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls};
+use ark_bls12_381::{
+    Bls12_381, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
+    G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
+};
 
 use ark_bn254::Bn254;
+use ark_ec::AffineRepr;
 //G1Projective as G1Projective_bn};
 use ark_ec::pairing::Pairing;
 use ark_ec::CurveGroup;
@@ -129,14 +133,17 @@ pub fn msk_aggregation_from_stored_data<E: Pairing>(
     return msk_bytes;
 }
 
-pub fn loe_signature_is_valid(round: u64, signature: String , loe_pk: String) -> bool{
-    let pk_affine_2 = str_to_group::<G2Projective_bls>(loe_pk.as_str()).unwrap().into_affine();
+#[allow(dead_code)]
+pub fn loe_signature_is_valid(round: u64, signature: String, loe_pk: String) -> bool {
+    let pk_affine_2 = str_to_group::<G2Projective_bls>(loe_pk.as_str())
+        .unwrap()
+        .into_affine();
     let signature_affine_1 = str_to_group::<G1Projective_bls>(signature.as_str())
         .unwrap()
         .into_affine();
     let msg = message(round);
 
-    let mut hash_on_curve_1 = hash_loe_g1(&msg);
+    let hash_on_curve_1 = hash_loe_g1(&msg);
 
     let left_hand = Bls12_381::pairing(&signature_affine_1, G2Affine_bls::generator());
     let right_hand = Bls12_381::pairing(&hash_on_curve_1, &pk_affine_2);
@@ -245,6 +252,15 @@ mod tests {
             ROUND,
             SCHEME.to_string(),
             SECURITY_PARAM,
+        ));
+    }
+
+    #[test]
+    fn loe_signature_validate_works() {
+        assert!(loe_signature_is_valid(
+            ROUND,
+            SIGNATURE.into(),
+            LOE_PUBLIC_KEY.into()
         ));
     }
 }

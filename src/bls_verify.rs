@@ -31,6 +31,7 @@ pub fn bls_verify_1(pk: &str, message: &[u8], signature: &str) -> bool {
     let right_hand = Bls12_381::pairing(&pk_affine_1, &hash_on_curve_2);
     return left_hand == right_hand;
 }
+
 #[allow(unused)]
 pub fn bls_verify_2(pk: &str, message: &[u8], signature: &str) -> bool {
     let pk_affine_2 = str_to_group::<G2Projective_bls>(pk).unwrap().into_affine();
@@ -43,6 +44,7 @@ pub fn bls_verify_2(pk: &str, message: &[u8], signature: &str) -> bool {
     let right_hand = Bls12_381::pairing(&hash_on_curve_1, &pk_affine_2);
     return left_hand == right_hand;
 }
+
 #[allow(unused)]
 pub fn concatinate(current_round: u64, previous_signature: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::default();
