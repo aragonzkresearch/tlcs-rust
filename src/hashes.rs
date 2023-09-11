@@ -1,13 +1,9 @@
-//use primitives::*;
 use crate::primitives::*;
-
 use anyhow::anyhow;
 use ark_bls12_381::{
     g1,
     g2,
-    //g2::Config as G2Config,
     G1Affine as G1Affine_bls,
-    //g1, g1::Config as G1Config, g2, g2::Config as G2Config, G1Affine as G1Affine_bls,
     G1Projective as G1Projective_bls,
     G2Affine as G2Affine_bls,
     G2Projective as G2Projective_bls,
@@ -21,44 +17,32 @@ use ark_ec::{
         //HashToCurveError,
     },
     models::short_weierstrass,
-    //models::short_weierstrass::Projective,
     pairing::Pairing,
     pairing::PairingOutput,
-    //AffineRepr,
     CurveGroup,
 };
-
-//use ark_bn254::{G1Projective, G2Affine as G2Affine_bn, G2Projective as G2Projective_bn};
-
 use ark_ff::field_hashers::DefaultFieldHasher;
-//use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_serialize::CanonicalSerialize;
-//use ark_std::rand::Rng;
-//use hex::ToHex;
-//use sha2::{Digest, Sha256};
-
 use bit_vec::BitVec;
 use sha2::{Digest, Sha256};
 
 pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
-//pub const G2_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
-//
-// 1
+
 pub fn hash_loe_g1(msg: &[u8]) -> G1Affine_bls {
     let mapper = MapToCurveBasedHasher::<
         short_weierstrass::Projective<g1::Config>,
         DefaultFieldHasher<sha2::Sha256, 128>,
         WBMap<g1::Config>,
     >::new(G1_DOMAIN)
-    .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G1"))
-    .unwrap();
+        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G1"))
+        .unwrap();
     let hash_on_curve = G1Projective_bls::from(
         mapper
             .hash(msg)
             .map_err(|_| anyhow!("hash cannot be mapped to G1"))
             .unwrap(),
     )
-    .into_affine();
+        .into_affine();
     return hash_on_curve;
 }
 #[allow(unused)]
@@ -68,15 +52,15 @@ pub fn hash_loe_g2(msg: &[u8]) -> G2Affine_bls {
         DefaultFieldHasher<sha2::Sha256, 128>,
         WBMap<g2::Config>,
     >::new(G1_DOMAIN)
-    .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
-    .unwrap();
+        .map_err(|_| anyhow!("cannot initialise mapper for sha2 to BLS12-381 G2"))
+        .unwrap();
     let hash_on_curve = G2Projective_bls::from(
         mapper
             .hash(msg)
             .map_err(|_| anyhow!("hash cannot be mapped to G2"))
             .unwrap(),
     )
-    .into_affine();
+        .into_affine();
     return hash_on_curve;
 }
 
@@ -95,10 +79,10 @@ pub fn hash_1<E: Pairing>(g_target: PairingOutput<E>) -> Vec<u8> {
     fixed_size_u8.to_vec()
 }
 #[allow(unused)]
-pub fn hash_2<E: Pairing>(
-    pk: &E::G1,
-    pk_0_vec: &Vec<E::G1>,
-    pk_1_vec: &Vec<E::G1>,
+pub fn hash_2<E: CurveGroup>(
+    pk: &E ,
+    pk_0_vec: &Vec<E >,
+    pk_1_vec: &Vec<E >,
     t_0: &Vec<G2Projective_bls>,
     t_1: &Vec<G2Projective_bls>,
     y_0: &Vec<Vec<u8>>,

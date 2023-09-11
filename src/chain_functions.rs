@@ -7,9 +7,8 @@ use ark_bls12_381::{
     G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
 };
 
-use ark_bn254::Bn254;
+use ark_secp256k1 ::{Projective as secp256k1, Fr as Fr_secp};
 use ark_ec::AffineRepr;
-//G1Projective as G1Projective_bn};
 use ark_ec::pairing::Pairing;
 use ark_ec::CurveGroup;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -23,13 +22,13 @@ use ark_std::Zero;
 #[allow(unused)]
 pub fn make_keyshare(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
     // Make key from round and loe_pk
-    type TlcsKeyShare = KeyShare<Bn254>;
+    type TlcsKeyShare = KeyShare<secp256k1>;
 
     let mut rng = ark_std::test_rng();
     let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
     // TODO: use the proper Pairing (from scheme)
 
-    return key_share_store::<Bn254>(&key);
+    return key_share_store::<secp256k1>(&key);
 }
 
 #[allow(unused)]
@@ -41,13 +40,13 @@ pub fn verify_keyshare(
     sec_param: usize,
 ) -> bool {
     // TODO: use the proper Pairing (from scheme)
-    return verify_key_share_store::<Bn254>(pk_loe.into(), data, round, sec_param);
+    return verify_key_share_store::<secp256k1>(pk_loe.into(), data, round, sec_param);
 }
 
 #[allow(unused)]
 pub fn make_public_key(pk_loe: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
     // TODO: use the proper Pairing (from scheme)
-    return mpk_aggregation_from_stored_data::<Bn254>(all_data);
+    return mpk_aggregation_from_stored_data::<secp256k1>(all_data);
 }
 
 #[allow(unused)]
@@ -62,7 +61,7 @@ pub fn make_secret_key(
     let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
         .unwrap()
         .into_affine();
-    return msk_aggregation_from_stored_data::<Bn254>(&sk_t, &all_data);
+    return msk_aggregation_from_stored_data::<secp256k1>(&sk_t, &all_data);
 }
 
 #[allow(dead_code)]
@@ -83,7 +82,7 @@ pub fn loe_signature_is_valid(round: u64, signature: String, loe_pk: String) -> 
 }
 
 #[allow(dead_code)]
-fn key_share_store<E: Pairing>(key_share: &KeyShare<E>) -> Vec<u8> {
+fn key_share_store<E: CurveGroup>(key_share: &KeyShare<E>) -> Vec<u8> {
     // println!("key_share_store : {:?}", key_share);
     let mut key_share_serialized_compressed = Vec::new();
     key_share
@@ -94,7 +93,7 @@ fn key_share_store<E: Pairing>(key_share: &KeyShare<E>) -> Vec<u8> {
 }
 
 #[allow(dead_code)]
-fn verify_key_share_store<E: Pairing>(
+fn verify_key_share_store<E: CurveGroup>(
     pk_loe: String,
     key_share_stored: Vec<u8>,
     round: u64,
@@ -106,9 +105,9 @@ fn verify_key_share_store<E: Pairing>(
 }
 
 #[allow(dead_code)]
-fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -> Vec<u8> {
+fn mpk_aggregation_from_stored_data<E: CurveGroup>(key_shares: &Vec<Vec<u8>>) -> Vec<u8> {
     //type KS = KeyShare<E>;
-    let mut mpk = E::G1::zero();
+    let mut mpk = E::zero();
     for k in key_shares {
         let key_share = KeyShare::<E>::deserialize_compressed(k.as_slice())
             .expect("Deserialization should succeed");
@@ -121,7 +120,7 @@ fn mpk_aggregation_from_stored_data<E: Pairing>(key_shares: &Vec<Vec<u8>>) -> Ve
 }
 
 #[allow(dead_code)]
-fn msk_aggregation_from_stored_data<E: Pairing>(
+fn msk_aggregation_from_stored_data<E: CurveGroup>(
     sk_t: &G1Affine_bls,
     key_shares: &Vec<Vec<u8>>,
 ) -> Vec<u8> {
@@ -158,7 +157,8 @@ mod tests {
         G2Affine as G2Affine_bn, G2Affine, G2Projective as G2Projective_bn,
     };
     */
-    use ark_bn254::{Fr as Fr_bn, G1Projective as G1Projective_bn};
+    //use ark_bn254::{Fr as Fr_bn, G1Projective as G1Projective_bn};
+    use ark_secp256k1 ::{Projective};
 
     // retrieved from https://api.drand.sh/dbd506d6ef76e5f386f41c651dcb808c5bcbd75471cc4eafa3f4df7ad4e4c493/public/2
     const LOE_PUBLIC_KEY: &str = "a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
@@ -203,9 +203,9 @@ mod tests {
 
         let public_key = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
         let str_public_key = hex::encode(&public_key);
-        assert!(public_key.len() == 32);
+        assert!(public_key.len() == 33);
         assert!(
-            str_to_group::<G1Projective_bn>(&str_public_key).is_ok(),
+            str_to_group::<secp256k1>(&str_public_key).is_ok(),
             "Expected Ok, but got Err"
         );
     }
@@ -233,7 +233,7 @@ mod tests {
             all_participant_data,
         );
         let vec_secret_key = hex::encode(secret_key);
-        let _f = str_to_field::<Fr_bn>(&vec_secret_key);
+        let _f = str_to_field::<Fr_secp>(&vec_secret_key);
         assert!(vec_secret_key.len() == 64);
     }
 
