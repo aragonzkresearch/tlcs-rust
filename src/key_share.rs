@@ -9,17 +9,16 @@ use ark_bls12_381::{
 };
 use ark_ec::{pairing::Pairing, CurveGroup, Group};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-//use ark_std::io::Read;
 use ark_std::{ops::Mul, rand::Rng, UniformRand, Zero};
 
 pub type PublicKey<C> = C;
 pub type SecretKey<C> = <C as Group>::ScalarField;
 
 #[derive(Debug, CanonicalSerialize, CanonicalDeserialize, PartialEq, Clone)]
-pub struct KeyShare<E: Pairing> {
-    pub pk: PublicKey<E::G1>,
-    pub pk_0: Vec<PublicKey<E::G1>>,
-    pub pk_1: Vec<PublicKey<E::G1>>,
+pub struct KeyShare<E: CurveGroup> {
+    pub pk: PublicKey<E>,
+    pub pk_0: Vec<PublicKey<E>>,
+    pub pk_1: Vec<PublicKey<E>>,
     pub t: Vec<SecretKey<G2Projective_bls>>,
     pub t_0: Vec<PublicKey<G2Projective_bls>>,
     pub t_1: Vec<PublicKey<G2Projective_bls>>,
@@ -27,7 +26,7 @@ pub struct KeyShare<E: Pairing> {
     pub y_1: Vec<Vec<u8>>,
 }
 
-impl<E: Pairing> KeyShare<E> {
+impl<E: CurveGroup> KeyShare<E> {
     #[allow(dead_code)]
     pub fn key_share_gen<R: Rng>(
         rng: &mut R,
@@ -36,17 +35,17 @@ impl<E: Pairing> KeyShare<E> {
         sec_param: usize,
     ) -> Self {
         let pk_loe = str_to_group::<G2Projective_bls>(pk_loe_str).unwrap();
-        let pairing_generator_1 = <E::G1 as Group>::generator();
+        let pairing_generator_1 = < E as Group>::generator();
         let bls_generator_2 = G2Projective_bls::generator();
 
-        let secret_key = <E::G1 as Group>::ScalarField::rand(rng);
+        let secret_key = < E as Group>::ScalarField::rand(rng);
 
-        let public_key: E::G1 = pairing_generator_1.mul(secret_key);
-        let mut pk_vector_0: Vec<E::G1> = Vec::new();
-        let mut pk_vector_1: Vec<E::G1> = Vec::new();
+        let public_key: E= pairing_generator_1.mul(secret_key);
+        let mut pk_vector_0: Vec<E> = Vec::new();
+        let mut pk_vector_1: Vec<E> = Vec::new();
 
-        let mut sk_vector_0: Vec<<E::G1 as Group>::ScalarField> = Vec::new();
-        let mut sk_vector_1: Vec<<E::G1 as Group>::ScalarField> = Vec::new();
+        let mut sk_vector_0: Vec<< E as Group>::ScalarField> = Vec::new();
+        let mut sk_vector_1: Vec<< E as Group>::ScalarField> = Vec::new();
 
         let mut t_vector_0: Vec<SecretKey<G2Projective_bls>> = Vec::new();
         let mut t_vector_1: Vec<SecretKey<G2Projective_bls>> = Vec::new();
@@ -55,12 +54,12 @@ impl<E: Pairing> KeyShare<E> {
         let mut y_vector_1: Vec<Vec<u8>> = Vec::new();
 
         #[allow(non_snake_case)]
-        let mut T_vector_0: Vec<PublicKey<G2Projective_bls>> = Vec::new();
+            let mut T_vector_0: Vec<PublicKey<G2Projective_bls>> = Vec::new();
         #[allow(non_snake_case)]
-        let mut T_vector_1: Vec<PublicKey<G2Projective_bls>> = Vec::new();
+            let mut T_vector_1: Vec<PublicKey<G2Projective_bls>> = Vec::new();
 
         for _ in 0..sec_param {
-            let sk_0 = <E::G1 as Group>::ScalarField::rand(rng);
+            let sk_0 = < E as Group>::ScalarField::rand(rng);
             let sk_1 = secret_key - &sk_0;
 
             pk_vector_0.push(pairing_generator_1.mul(&sk_0));
@@ -119,25 +118,6 @@ impl<E: Pairing> KeyShare<E> {
             })
             .collect();
 
-        // for i in 0..sec_param{
-        //     println!("( {}) ",i);
-        //     println!("r: {}", random_bit_string_value[i]);
-        //     println!("t0: {:?}", t_vector_0[i]);
-        //     println!("g^ t0: {:?}", bls_generator_2.mul(&t_vector_0[i]).into_affine());
-        //     println!("T0: {}", T_vector_0[i]);
-        //     println!("");
-        //
-        //     println!("t1: {:?}", t_vector_1[i]);
-        //     println!("g ^ t1: {:?}", bls_generator_2.mul(&t_vector_1[i]).into_affine());
-        //     println!("T1: {}", T_vector_1[i]);
-        //     println!("");
-        //
-        //
-        //     println!("t: {:?}", t_vector[i]);
-        //     println!("T: {:?}", bls_generator_2.mul(&t_vector[i]).into_affine());
-        //
-        // }
-
         let key_share = Self {
             pk: public_key,
             pk_0: pk_vector_0,
@@ -155,21 +135,21 @@ impl<E: Pairing> KeyShare<E> {
     #[allow(unused)]
     pub fn sk_verify(
         pk_loe_str: &str,
-        pk: &E::G1,
+        pk: &E,
         t: &SecretKey<G2Projective_bls>,
         #[allow(non_snake_case)] T: &G2Projective_bls,
         y: &Vec<u8>,
         round: u64,
     ) -> bool {
         let pk_loe = str_to_group::<G2Projective_bls>(pk_loe_str).unwrap();
-        let pairing_generator_1 = E::G1::generator();
+        let pairing_generator_1 = E::generator();
         let bls_generator_2 = G2Projective_bls::generator();
 
         #[allow(non_snake_case)]
-        let T_A = T.clone().into_affine();
+            let T_A = T.clone().into_affine();
 
         #[allow(non_snake_case)]
-        let T_P = bls_generator_2.mul(t).into_affine();
+            let T_P = bls_generator_2.mul(t).into_affine();
 
         if T_A != T_P {
             println!("g^t = {}", bls_generator_2.mul(t));
@@ -180,7 +160,7 @@ impl<E: Pairing> KeyShare<E> {
 
         let z = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(t));
         let sk0 = xor(&hash_1(z), y);
-        let sk = <E::G1 as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
+        let sk = < E as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
         if *pk != pairing_generator_1.mul(sk) {
             println!("line 246");
             return false;
@@ -233,8 +213,8 @@ impl<E: Pairing> KeyShare<E> {
         true
     }
     #[allow(dead_code)]
-    pub fn mpk_aggregation(key_shares: &Vec<Self>) -> E::G1 {
-        let mut mpk = E::G1::zero();
+    pub fn mpk_aggregation(key_shares: &Vec<Self>) -> E {
+        let mut mpk = E::zero();
         for i in 0..key_shares.len() {
             mpk = mpk + &key_shares[i].pk;
         }
@@ -264,8 +244,8 @@ impl<E: Pairing> KeyShare<E> {
             //println!("sk_0 = {:?}", sk0);
             //println!("sk_1 = {:?}", sk1);
 
-            let sk_0 = <E::G1 as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
-            let sk_1 = <E::G1 as Group>::ScalarField::deserialize_compressed(&*sk1).unwrap();
+            let sk_0 = < E as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
+            let sk_1 = < E as Group>::ScalarField::deserialize_compressed(&*sk1).unwrap();
             msk = msk + sk_0;
             msk = msk + sk_1;
         }
@@ -278,11 +258,7 @@ impl<E: Pairing> KeyShare<E> {
 mod tests {
     use super::*;
     use ark_bls12_381::G1Projective as G1Projective_bls;
-    //use ark_bls12_381::{
-    //    Bls12_381, Fr as Fr_bls, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
-    //    G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
-    //};
-    use ark_bn254::{Bn254, G1Projective as G1Projective_bn};
+    use ark_secp256k1 :: Projective as secp256k1;
 
     const LOE_PUBLIC_KEY: &str = "a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
     const SIGNATURE: &str = "9544ddce2fdbe8688d6f5b4f98eed5d63eee3902e7e162050ac0f45905a55657714880adabe3c3096b92767d886567d0";
@@ -291,9 +267,10 @@ mod tests {
 
     #[test]
     fn aggregation_is_correct() {
+        println!("start the test");
         let mut rng = ark_std::test_rng();
 
-        type TlcsKeyShare = KeyShare<Bn254>;
+        type TlcsKeyShare = KeyShare<secp256k1>;
         let mut all_key_share: Vec<TlcsKeyShare> = Vec::new();
 
         for _i in 0..2 {
@@ -310,7 +287,7 @@ mod tests {
         //println!("sk_round = {}", sk_round);
         let msk = TlcsKeyShare::msk_aggregation(&sk_round, &all_key_share);
         let mpk = TlcsKeyShare::mpk_aggregation(&all_key_share);
-        let g = G1Projective_bn::generator();
+        let g = secp256k1::generator();
         let mpk_test = g.mul(&msk);
         assert_eq!(mpk, mpk_test);
         assert_eq!(pk, mpk);
