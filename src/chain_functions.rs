@@ -25,7 +25,8 @@ pub fn make_keyshare(pk_loe: String, round: u64, _scheme: String, sec_param: usi
     // Make key from round and loe_pk
     type TlcsKeyShare = KeyShare<Bn254>;
 
-    let mut rng = ark_std::test_rng();
+    //let mut rng = ark_std::test_rng();
+    let mut rng = ark_std::rand::thread_rng();
     let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
     // TODO: use the proper Pairing (from scheme)
 
