@@ -207,7 +207,8 @@ mod tests {
 
         let public_key = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
         let str_public_key = hex::encode(&public_key);
-        assert!(public_key.len() == 33);
+
+        assert!(str_public_key.len()==  64);
         assert!(
             str_to_group::<tlcs_curve>(&str_public_key).is_ok(),
             "Expected Ok, but got Err"

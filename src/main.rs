@@ -20,5 +20,7 @@ fn main() {
     println!(" g = {}", g);
     let g_str = group_to_hex::<EdwardsProjective>(&g);
     println!("g_proj  = {}, len = {}", g_str, g_str.len());
+    let example = "26A2B281C4EA791B498D67D3A206FE0E402594720EF675F5BA05B99637823C35";
+    println!(" len = {}", example.len());
 
 }
