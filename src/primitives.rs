@@ -7,7 +7,7 @@
 //use sha2::{Digest, Sha256};
 //use ark_ec::{CurveGroup, Group};
 //use ark_serialize::CanonicalDeserialize;
-use ark_ec::CurveGroup;
+use ark_ec::{CurveGroup, Group};
 use ark_ff::Field;
 //use hex::ToHex;
 use std::fmt;
@@ -57,7 +57,6 @@ pub fn serialize_compressed_f<F: Field>(s: &F) -> Vec<u8> {
     s.serialize_compressed(&mut compressed_bytes).unwrap();
     compressed_bytes
 }
-
 #[allow(unused)]
 pub fn round_to_bytes(round: u64) -> [u8; 8] {
     // test : NOT DONE
@@ -73,6 +72,14 @@ pub fn str_to_byte(g_str: &str) -> Vec<u8> {
 pub fn str_to_field<F: Field>(f_str: &str) -> F {
     let f_bytes = hex::decode(f_str).unwrap();
     F::deserialize_compressed(&*f_bytes).unwrap()
+}
+
+#[allow(unused)]
+pub fn field_to_hex<F: Field>(f: &F) -> String {
+    let mut f_bytes = Vec::new();
+    f.serialize_compressed(&mut f_bytes).unwrap();
+    let f_hex = hex::encode(f_bytes);
+    f_hex
 }
 
 ///
