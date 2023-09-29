@@ -7,11 +7,13 @@ use ark_bls12_381::{
     G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
 };
 
-//use ark_secp256k1 ::{Projective as tlcs_curve, Fr as Fr_tlcs};
-use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve, EdwardsAffine, Fr as Fr_tlcs};
+#[allow(unused)]
+use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, Fr as Fr_tlcs_bjj};
+#[allow(unused)]
+use ark_secp256k1::{Fr as Fr_tlcs_secp, Projective as tlcs_curve_secp};
 
-use ark_ec::AffineRepr;
 use ark_ec::pairing::Pairing;
+use ark_ec::AffineRepr;
 use ark_ec::CurveGroup;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
@@ -20,51 +22,132 @@ use ark_std::Zero;
 /******************************************************************************************
 ** The four functions needed by the chain
 ******************************************************************************************/
+// TODO: use the proper Pairing (from scheme) in these functions properly
 
+//
+// Wrapper functions (temporary)
+//
 #[allow(unused)]
-pub fn make_keyshare(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
-    // Make key from round and loe_pk
-    type TlcsKeyShare = KeyShare<tlcs_curve>;
-
-    let mut rng = ark_std::test_rng();
-    //let mut rng = ark_std::rand::thread_rng();
-    let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
-    // TODO: use the proper Pairing (from scheme)
-
-    return key_share_store::<tlcs_curve>(&key);
+pub fn make_keyshare(pk_loe: String, round: u64, scheme: String, sec_param: usize) -> Vec<u8> {
+    match scheme.as_str() {
+        "BJJ" => make_keyshare_bjj(pk_loe, round, scheme, sec_param),
+        "SECP256K1" => make_keyshare_secp(pk_loe, round, scheme, sec_param),
+        &_ => make_keyshare_bjj(pk_loe, round, scheme, sec_param),
+    }
 }
 
 #[allow(unused)]
 pub fn verify_keyshare(
     pk_loe: String,
     round: u64,
+    scheme: String,
+    data: Vec<u8>,
+    sec_param: usize,
+) -> bool {
+    match scheme.as_str() {
+        "BJJ" => verify_keyshare_bjj(pk_loe, round, scheme, data, sec_param),
+        "SECP256K1" => verify_keyshare_secp(pk_loe, round, scheme, data, sec_param),
+        &_ => verify_keyshare_bjj(pk_loe, round, scheme, data, sec_param),
+    }
+}
+
+#[allow(unused)]
+pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+    match scheme.as_str() {
+        "BJJ" => make_public_key_bjj(all_data),
+        "SECP256K1" => make_public_key_secp(all_data),
+        &_ => make_public_key_bjj(all_data),
+    }
+}
+
+#[allow(unused)]
+pub fn make_secret_key(scheme: String, loe_signature: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
+    match scheme.as_str() {
+        "BJJ" => make_secret_key_bjj(loe_signature, all_data),
+        "SECP256K1" => make_secret_key_secp(loe_signature, all_data),
+        &_ => make_secret_key_bjj(loe_signature, all_data),
+    }
+}
+
+//
+// BabyJubJub functions
+//
+#[allow(unused)]
+pub fn make_keyshare_bjj(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
+    //let mut rng = ark_std::test_rng();
+    let mut rng = ark_std::rand::thread_rng();
+
+    type TlcsKeyShare = KeyShare<tlcs_curve_bjj>;
+    let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
+
+    return key_share_store::<tlcs_curve_bjj>(&key);
+}
+
+#[allow(unused)]
+pub fn verify_keyshare_bjj(
+    pk_loe: String,
+    round: u64,
     _scheme: String,
     data: Vec<u8>,
     sec_param: usize,
 ) -> bool {
-    // TODO: use the proper Pairing (from scheme)
-    return verify_key_share_store::<tlcs_curve>(pk_loe.into(), data, round, sec_param);
+    return verify_key_share_store::<tlcs_curve_bjj>(pk_loe.into(), data, round, sec_param);
 }
 
 #[allow(unused)]
-pub fn make_public_key(pk_loe: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
-    // TODO: use the proper Pairing (from scheme)
-    return mpk_aggregation_from_stored_data::<tlcs_curve>(all_data);
+pub fn make_public_key_bjj(all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+    mpk_aggregation_from_stored_data::<tlcs_curve_bjj>(all_data)
 }
 
 #[allow(unused)]
-pub fn make_secret_key(
-    _round: u64,
-    _scheme: String,
-    loe_signature: String,
-    all_data: Vec<Vec<u8>>,
-) -> Vec<u8> {
-    // TODO: use the proper Pairing (from scheme)
-    // TODO: change msk_aggregation_from_stored_data output to Vec<u8>
+pub fn make_secret_key_bjj(loe_signature: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
     let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
         .unwrap()
         .into_affine();
-    return msk_aggregation_from_stored_data::<tlcs_curve>(&sk_t, &all_data);
+    msk_aggregation_from_stored_data::<tlcs_curve_bjj>(&sk_t, &all_data)
+}
+
+//
+// SECP256K1 functions
+//
+#[allow(unused)]
+pub fn make_keyshare_secp(
+    pk_loe: String,
+    round: u64,
+    _scheme: String,
+    sec_param: usize,
+) -> Vec<u8> {
+    //let mut rng = ark_std::test_rng();
+    let mut rng = ark_std::rand::thread_rng();
+
+    type TlcsKeyShare = KeyShare<tlcs_curve_secp>;
+    let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
+
+    return key_share_store::<tlcs_curve_secp>(&key);
+}
+
+#[allow(unused)]
+pub fn verify_keyshare_secp(
+    pk_loe: String,
+    round: u64,
+    _scheme: String,
+    data: Vec<u8>,
+    sec_param: usize,
+) -> bool {
+    return verify_key_share_store::<tlcs_curve_secp>(pk_loe.into(), data, round, sec_param);
+}
+
+#[allow(unused)]
+pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+    mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data)
+}
+
+#[allow(unused)]
+pub fn make_secret_key_secp(loe_signature: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
+    let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
+        .unwrap()
+        .into_affine();
+    msk_aggregation_from_stored_data::<tlcs_curve_secp>(&sk_t, &all_data)
 }
 
 #[allow(dead_code)]
@@ -86,7 +169,6 @@ pub fn loe_signature_is_valid(round: u64, signature: String, loe_pk: String) -> 
 
 #[allow(dead_code)]
 fn key_share_store<E: CurveGroup>(key_share: &KeyShare<E>) -> Vec<u8> {
-
     let mut key_share_serialized_compressed = Vec::new();
     key_share
         .serialize_compressed(&mut key_share_serialized_compressed)
@@ -201,20 +283,20 @@ mod tests {
         let public_key = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
         let str_public_key = hex::encode(&public_key);
 
-        let g = tlcs_curve::generator();
-        let g_str = group_to_hex::<tlcs_curve>(&g);
+        let g = tlcs_curve_bjj::generator();
+        let g_str = group_to_hex::<tlcs_curve_bjj>(&g);
         //assert_eq!(true, false);
-        assert_eq!(str_public_key.len() , g_str.len());
+        assert_eq!(str_public_key.len(), g_str.len());
 
-       // assert!(str_public_key.len()==  64);
+        // assert!(str_public_key.len()==  64);
         assert!(
-            str_to_group::<tlcs_curve>(&str_public_key).is_ok(),
+            str_to_group::<tlcs_curve_bjj>(&str_public_key).is_ok(),
             "Expected Ok, but got Err"
         );
     }
 
     #[test]
-    fn make_secret_key_works() {
+    fn make_secret_key_works_bjj() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -230,22 +312,52 @@ mod tests {
         ));
 
         let secret_key = make_secret_key(
-            ROUND,
             SCHEME.to_string(),
             SIGNATURE.to_string(),
             all_participant_data,
         );
         let vec_secret_key = hex::encode(secret_key);
-        let _f = str_to_field::<Fr_tlcs>(&vec_secret_key);
+        let _f = str_to_field::<Fr_tlcs_bjj>(&vec_secret_key);
 
         let mut rng = ark_std::test_rng();
-        let f = Fr_tlcs::rand(&mut rng);
-        let f_str = field_to_hex::<Fr_tlcs>(&f);
+        let f = Fr_tlcs_bjj::rand(&mut rng);
+        let f_str = field_to_hex::<Fr_tlcs_bjj>(&f);
         assert_eq!(vec_secret_key.len(), f_str.len());
 
         //assert!(vec_secret_key.len() == 64);
     }
 
+    #[test]
+    fn make_secret_key_works_secp256k1() {
+        let mut all_participant_data: Vec<Vec<u8>> = vec![];
+        all_participant_data.push(make_keyshare(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            "SECP256K1".into(),
+            SECURITY_PARAM,
+        ));
+        all_participant_data.push(make_keyshare(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            "SECP256K1".into(),
+            SECURITY_PARAM,
+        ));
+
+        let secret_key = make_secret_key(
+            "SECP256K1".into(),
+            SIGNATURE.to_string(),
+            all_participant_data,
+        );
+        let vec_secret_key = hex::encode(secret_key);
+        let _f = str_to_field::<Fr_tlcs_secp>(&vec_secret_key);
+
+        let mut rng = ark_std::test_rng();
+        let f = Fr_tlcs_secp::rand(&mut rng);
+        let f_str = field_to_hex::<Fr_tlcs_secp>(&f);
+        assert_eq!(vec_secret_key.len(), f_str.len());
+
+        //assert!(vec_secret_key.len() == 64);
+    }
     #[test]
     fn mpk_and_msk_are_correct() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];

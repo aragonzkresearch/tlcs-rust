@@ -35,17 +35,17 @@ impl<E: CurveGroup> KeyShare<E> {
         sec_param: usize,
     ) -> Self {
         let pk_loe = str_to_group::<G2Projective_bls>(pk_loe_str).unwrap();
-        let pairing_generator_1 = < E as Group>::generator();
+        let pairing_generator_1 = <E as Group>::generator();
         let bls_generator_2 = G2Projective_bls::generator();
 
-        let secret_key = < E as Group>::ScalarField::rand(rng);
+        let secret_key = <E as Group>::ScalarField::rand(rng);
 
-        let public_key: E= pairing_generator_1.mul(secret_key);
+        let public_key: E = pairing_generator_1.mul(secret_key);
         let mut pk_vector_0: Vec<E> = Vec::new();
         let mut pk_vector_1: Vec<E> = Vec::new();
 
-        let mut sk_vector_0: Vec<< E as Group>::ScalarField> = Vec::new();
-        let mut sk_vector_1: Vec<< E as Group>::ScalarField> = Vec::new();
+        let mut sk_vector_0: Vec<<E as Group>::ScalarField> = Vec::new();
+        let mut sk_vector_1: Vec<<E as Group>::ScalarField> = Vec::new();
 
         let mut t_vector_0: Vec<SecretKey<G2Projective_bls>> = Vec::new();
         let mut t_vector_1: Vec<SecretKey<G2Projective_bls>> = Vec::new();
@@ -54,12 +54,12 @@ impl<E: CurveGroup> KeyShare<E> {
         let mut y_vector_1: Vec<Vec<u8>> = Vec::new();
 
         #[allow(non_snake_case)]
-            let mut T_vector_0: Vec<PublicKey<G2Projective_bls>> = Vec::new();
+        let mut T_vector_0: Vec<PublicKey<G2Projective_bls>> = Vec::new();
         #[allow(non_snake_case)]
-            let mut T_vector_1: Vec<PublicKey<G2Projective_bls>> = Vec::new();
+        let mut T_vector_1: Vec<PublicKey<G2Projective_bls>> = Vec::new();
 
         for _ in 0..sec_param {
-            let sk_0 = < E as Group>::ScalarField::rand(rng);
+            let sk_0 = <E as Group>::ScalarField::rand(rng);
             let sk_1 = secret_key - &sk_0;
 
             pk_vector_0.push(pairing_generator_1.mul(&sk_0));
@@ -146,10 +146,10 @@ impl<E: CurveGroup> KeyShare<E> {
         let bls_generator_2 = G2Projective_bls::generator();
 
         #[allow(non_snake_case)]
-            let T_A = T.clone().into_affine();
+        let T_A = T.clone().into_affine();
 
         #[allow(non_snake_case)]
-            let T_P = bls_generator_2.mul(t).into_affine();
+        let T_P = bls_generator_2.mul(t).into_affine();
 
         if T_A != T_P {
             println!("g^t = {}", bls_generator_2.mul(t));
@@ -160,7 +160,7 @@ impl<E: CurveGroup> KeyShare<E> {
 
         let z = Bls12_381::pairing(hash_loe_g1(&message(round)), pk_loe.mul(t));
         let sk0 = xor(&hash_1(z), y);
-        let sk = < E as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
+        let sk = <E as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
         if *pk != pairing_generator_1.mul(sk) {
             println!("line 246");
             return false;
@@ -244,8 +244,8 @@ impl<E: CurveGroup> KeyShare<E> {
             //println!("sk_0 = {:?}", sk0);
             //println!("sk_1 = {:?}", sk1);
 
-            let sk_0 = < E as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
-            let sk_1 = < E as Group>::ScalarField::deserialize_compressed(&*sk1).unwrap();
+            let sk_0 = <E as Group>::ScalarField::deserialize_compressed(&*sk0).unwrap();
+            let sk_1 = <E as Group>::ScalarField::deserialize_compressed(&*sk1).unwrap();
             msk = msk + sk_0;
             msk = msk + sk_1;
         }
@@ -259,9 +259,8 @@ mod tests {
     use super::*;
     use ark_bls12_381::G1Projective as G1Projective_bls;
     //use ark_secp256k1 :: Projective as tlcs_curve;
-    use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve, EdwardsAffine, Fr as Fr_tlcs};
+    use ark_ed_on_bn254::EdwardsProjective as tlcs_curve;
     //use ark_secp256k1 ::{Projective as tlcs_curve, Fr as Fr_tlcs};
-
 
     const LOE_PUBLIC_KEY: &str = "a0b862a7527fee3a731bcb59280ab6abd62d5c0b6ea03dc4ddf6612fdfc9d01f01c31542541771903475eb1ec6615f8d0df0b8b6dce385811d6dcf8cbefb8759e5e616a3dfd054c928940766d9a5b9db91e3b697e5d70a975181e007f87fca5e";
     const SIGNATURE: &str = "9544ddce2fdbe8688d6f5b4f98eed5d63eee3902e7e162050ac0f45905a55657714880adabe3c3096b92767d886567d0";
@@ -298,3 +297,4 @@ mod tests {
         assert_eq!(pk, mpk);
     }
 }
+

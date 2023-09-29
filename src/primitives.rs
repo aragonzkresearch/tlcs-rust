@@ -7,7 +7,7 @@
 //use sha2::{Digest, Sha256};
 //use ark_ec::{CurveGroup, Group};
 //use ark_serialize::CanonicalDeserialize;
-use ark_ec::{CurveGroup, Group};
+use ark_ec::CurveGroup;
 use ark_ff::Field;
 //use hex::ToHex;
 use std::fmt;
