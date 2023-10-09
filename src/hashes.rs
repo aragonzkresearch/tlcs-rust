@@ -26,7 +26,8 @@ use ark_serialize::CanonicalSerialize;
 use bit_vec::BitVec;
 use sha2::{Digest, Sha256};
 
-pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
+//pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
+pub const G1_DOMAIN: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 
 pub fn hash_loe_g1(msg: &[u8]) -> G1Affine_bls {
     let mapper = MapToCurveBasedHasher::<

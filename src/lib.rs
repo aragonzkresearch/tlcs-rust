@@ -4,7 +4,6 @@ mod hashes;
 mod key_share;
 mod primitives;
 
-
 //use crate::hashes::*;
 //use crate::key_share::*;
 //use crate::key_share_stored::*;
@@ -13,10 +12,7 @@ mod primitives;
 #[cfg(test)]
 mod tests {
     use crate::primitives::*;
-    use ark_bls12_381::{
-        G1Projective as G1Projective_bls,
-        G2Projective as G2Projective_bls,
-    };
+    use ark_bls12_381::{G1Projective as G1Projective_bls, G2Projective as G2Projective_bls};
     use ark_bn254::{G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
     //use ark_ec::{CurveGroup, Group};
     use ark_ec::Group;
@@ -29,7 +25,7 @@ mod tests {
     //use std::fmt;
 
     /// test for baby jubju curve
-    use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve, EdwardsAffine, Fr as Fr_tlcs};
+    use ark_ed_on_bn254::EdwardsProjective as tlcs_curve;
 
     #[test]
     fn bjubjub_group_to_hex_1() {
@@ -41,8 +37,6 @@ mod tests {
             assert_eq!(g, g_str_backto_group);
         }
     }
-
-
 
     ///
 
