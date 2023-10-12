@@ -81,7 +81,21 @@ pub fn field_to_hex<F: Field>(f: &F) -> String {
     let f_hex = hex::encode(f_bytes);
     f_hex
 }
-
+fn group_compressed_format<G: CurveGroup>(g: &G) -> String {
+    // println!("g= {}", g);
+    let g_affine = g.into_affine();
+    //println!("g_affine = {}", g_affine);
+    let g_x :String = g_affine.x().unwrap().to_string();
+    let g_y = g_affine.y().unwrap();
+    //println!("g_x = {}", g_x);
+    //println!("g_y = {}", g_y);
+    let g_bignum = BigUint::from_str_radix(g_x.as_str(), 10).unwrap();
+    let g_compressed = match g_y.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even(){
+        true  => format!("0x02{:x}", g_bignum),
+        false => format!("0x03{:x}", g_bignum),
+    };
+    return g_compressed;
+}
 ///
 /// Consider the case with tow different length vectors
 ///
