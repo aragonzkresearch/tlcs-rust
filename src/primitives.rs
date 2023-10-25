@@ -7,16 +7,18 @@
 //use sha2::{Digest, Sha256};
 //use ark_ec::{CurveGroup, Group};
 //use ark_serialize::CanonicalDeserialize;
-use ark_ec::CurveGroup;
+use ark_ec::{CurveGroup, AffineRepr};
 use ark_ff::Field;
 //use hex::ToHex;
 use std::fmt;
 //use rand::{thread_rng, Rng};
 // delete for real
+use num_bigint::{BigUint, ParseBigIntError};
+use num_integer::Integer;
+use num_traits::Num;
 
 #[derive(Debug)]
 pub struct InvalidPoint;
-
 impl fmt::Display for InvalidPoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "The data does not map to a valid point on the curve")
@@ -31,6 +33,23 @@ pub fn str_to_group<G: CurveGroup>(g_str: &str) -> Result<G, InvalidPoint> {
 pub fn byte_to_group<G: CurveGroup>(g_bytes: Vec<u8>) -> Result<G, InvalidPoint> {
     // test : NOT DONE
     Option::from(G::deserialize_compressed(&*g_bytes).unwrap()).ok_or(InvalidPoint)
+}
+
+#[allow(unused)]
+pub fn group_compressed_format<G: CurveGroup>(g: &G) -> String {
+    // println!("g= {}", g);
+    let g_affine = g.into_affine();
+    //println!("g_affine = {}", g_affine);
+    let g_x :String = g_affine.x().unwrap().to_string();
+    let g_y = g_affine.y().unwrap();
+    //println!("g_x = {}", g_x);
+    //println!("g_y = {}", g_y);
+    let g_bignum = BigUint::from_str_radix(g_x.as_str(), 10).unwrap();
+    let g_compressed = match g_y.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even(){
+        true  => format!("0x02{:x}", g_bignum),
+        false => format!("0x03{:x}", g_bignum),
+    };
+    return g_compressed;
 }
 
 #[allow(unused)]
@@ -80,21 +99,6 @@ pub fn field_to_hex<F: Field>(f: &F) -> String {
     f.serialize_compressed(&mut f_bytes).unwrap();
     let f_hex = hex::encode(f_bytes);
     f_hex
-}
-fn group_compressed_format<G: CurveGroup>(g: &G) -> String {
-    // println!("g= {}", g);
-    let g_affine = g.into_affine();
-    //println!("g_affine = {}", g_affine);
-    let g_x :String = g_affine.x().unwrap().to_string();
-    let g_y = g_affine.y().unwrap();
-    //println!("g_x = {}", g_x);
-    //println!("g_y = {}", g_y);
-    let g_bignum = BigUint::from_str_radix(g_x.as_str(), 10).unwrap();
-    let g_compressed = match g_y.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even(){
-        true  => format!("0x02{:x}", g_bignum),
-        false => format!("0x03{:x}", g_bignum),
-    };
-    return g_compressed;
 }
 ///
 /// Consider the case with tow different length vectors
