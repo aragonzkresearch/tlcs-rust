@@ -6,9 +6,14 @@ use ark_bls12_381::{
     Bls12_381, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
     G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
 };
+use num_bigint::{BigUint, ParseBigIntError};
+use num_bigint;
+use num_integer::Integer;
+use ark_ff::BigInteger;
+
 
 #[allow(unused)]
-use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, Fr as Fr_tlcs_bjj};
+use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, EdwardsAffine as affin_bjj,  Fr as Fr_tlcs_bjj};
 #[allow(unused)]
 use ark_secp256k1::{Fr as Fr_tlcs_secp, Projective as tlcs_curve_secp};
 
@@ -52,7 +57,7 @@ pub fn verify_keyshare(
 }
 
 #[allow(unused)]
-pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> String{
     match scheme.as_str() {
         "BJJ" => make_public_key_bjj(all_data),
         "SECP256K1" => make_public_key_secp(all_data),
@@ -61,7 +66,7 @@ pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> Vec<u8> {
 }
 
 #[allow(unused)]
-pub fn make_secret_key(scheme: String, loe_signature: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_secret_key(scheme: String, loe_signature: String, all_data: Vec<Vec<u8>>) ->String {
     match scheme.as_str() {
         "BJJ" => make_secret_key_bjj(loe_signature, all_data),
         "SECP256K1" => make_secret_key_secp(loe_signature, all_data),
@@ -95,12 +100,12 @@ pub fn verify_keyshare_bjj(
 }
 
 #[allow(unused)]
-pub fn make_public_key_bjj(all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_public_key_bjj(all_data: &Vec<Vec<u8>>) -> String {
     mpk_aggregation_from_stored_data::<tlcs_curve_bjj>(all_data)
 }
 
 #[allow(unused)]
-pub fn make_secret_key_bjj(loe_signature: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_secret_key_bjj(loe_signature: String, all_data: Vec<Vec<u8>>) -> String{
     let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
         .unwrap()
         .into_affine();
@@ -138,12 +143,12 @@ pub fn verify_keyshare_secp(
 }
 
 #[allow(unused)]
-pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> String {
     mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data)
 }
 
 #[allow(unused)]
-pub fn make_secret_key_secp(loe_signature: String, all_data: Vec<Vec<u8>>) -> Vec<u8> {
+pub fn make_secret_key_secp(loe_signature: String, all_data: Vec<Vec<u8>>) -> String {
     let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
         .unwrap()
         .into_affine();
@@ -190,7 +195,7 @@ fn verify_key_share_store<E: CurveGroup>(
 }
 
 #[allow(dead_code)]
-fn mpk_aggregation_from_stored_data<E: CurveGroup>(key_shares: &Vec<Vec<u8>>) -> Vec<u8> {
+fn mpk_aggregation_from_stored_data<E: CurveGroup>(key_shares: &Vec<Vec<u8>>) -> String {
     //type KS = KeyShare<E>;
     let mut mpk = E::zero();
     for k in key_shares {
@@ -198,17 +203,21 @@ fn mpk_aggregation_from_stored_data<E: CurveGroup>(key_shares: &Vec<Vec<u8>>) ->
             .expect("Deserialization should succeed");
         mpk = mpk + key_share.pk;
     }
+    let mpk_hex_compressed = group_compressed_format::<E>(&mpk);
+    return mpk_hex_compressed;
+    /*
     let mut mpk_serialized_compressed = Vec::new();
     mpk.serialize_compressed(&mut mpk_serialized_compressed)
         .expect("Serialization should succeed");
     return mpk_serialized_compressed;
+     */
 }
 
 #[allow(dead_code)]
 fn msk_aggregation_from_stored_data<E: CurveGroup>(
     sk_t: &G1Affine_bls,
     key_shares: &Vec<Vec<u8>>,
-) -> Vec<u8> {
+) -> String {
     // println!("step 4.3- inside the secodn one ");
 
     let mut msk = E::ScalarField::zero();
@@ -227,10 +236,15 @@ fn msk_aggregation_from_stored_data<E: CurveGroup>(
         msk = msk + sk_0;
         msk = msk + sk_1;
     }
+    let msk_big_int: BigUint = msk.into();
+    let msk_hex = format!("0X{:X} ", msk_big_int);
+    return msk_hex
+    /*
     let mut msk_bytes = Vec::new();
     msk.serialize_compressed(&mut msk_bytes).unwrap();
     // printlnb !("step 4.4 msk_bytes ={:?} ", msk_bytes);
     return msk_bytes;
+     */
 }
 
 #[cfg(test)]
@@ -253,6 +267,35 @@ mod tests {
     const ROUND: u64 = 2;
     const SECURITY_PARAM: usize = 10;
     const SCHEME: &str = "BJJ";
+
+
+
+    fn group_from_x_bjj(g_str : &str) -> tlcs_curve_bjj {
+        let (g_hex_str , is_even) : (&str, bool) = match g_str {
+            s if s.starts_with("0x02") || s.starts_with("0X02") => {
+                (&s[4..], true)
+            },
+            s if s.starts_with("0x03") || s.starts_with("0X03") => {
+                (&s[4..], false)
+            },
+            _ => ("0", false),
+        };
+        let g_big_int = hex_to_bignum(&g_hex_str).unwrap();
+        let g_x : Fq_tlcs_bjj = g_big_int.into();
+        let (x_0 , x_1)  = affin_bjj::get_xs_from_y_unchecked(g_x.clone()).unwrap();
+        let x_is_even = x_0.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even();
+        // let g_bignum_0 = BigUint::from_str_radix(x_0.as_str(), 10).unwrap();
+        //let g_compressed = match g_y.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even(){
+        let g_y = match is_even ^ x_is_even{
+            true  => x_1,
+            false => x_0,
+        };
+        let g : affin_bjj = affin_bjj::new(g_x, g_y);
+
+        return g.into();
+
+    }
+
 
     #[test]
     fn verify_participant_data_works() {
@@ -288,8 +331,22 @@ mod tests {
             SECURITY_PARAM,
         ));
 
-        let public_key = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
-        let str_public_key = hex::encode(&public_key);
+        let public_key_compressed = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
+        let (g_hex_str , is_even) : (&str, bool) = match public_key_compressed {
+            s if s.starts_with("0x02") || s.starts_with("0X02") => {
+                (&s[4..], true)
+            },
+            s if s.starts_with("0x03") || s.starts_with("0X03") => {
+                (&s[4..], false)
+            },
+            _ => {println!("Error!");
+                  ("0", false)},
+        };
+
+
+
+        let public_key = group_from_compressed_format_bjj(&public_key_compressed);
+        let str_public_key = group_to_hex::<tlcs_curve_bjj>(&public_key);
 
         let g = tlcs_curve_bjj::generator();
         let g_str = group_to_hex::<tlcs_curve_bjj>(&g);

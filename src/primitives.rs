@@ -7,7 +7,9 @@
 //use sha2::{Digest, Sha256};
 //use ark_ec::{CurveGroup, Group};
 //use ark_serialize::CanonicalDeserialize;
-use ark_ec::{CurveGroup, AffineRepr};
+use ark_ec::{
+     pairing::Pairing, pairing::PairingOutput, AffineRepr, CurveGroup, Group, short_weierstrass::Affine as Affine, short_weierstrass::SWCurveConfig
+};
 use ark_ff::Field;
 //use hex::ToHex;
 use std::fmt;
@@ -16,6 +18,7 @@ use std::fmt;
 use num_bigint::{BigUint, ParseBigIntError};
 use num_integer::Integer;
 use num_traits::Num;
+use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, EdwardsAffine as affin_bjj,  Fr as Fr_tlcs_bjj, EdwardsConfig};
 
 #[derive(Debug)]
 pub struct InvalidPoint;
@@ -51,6 +54,41 @@ pub fn group_compressed_format<G: CurveGroup>(g: &G) -> String {
     };
     return g_compressed;
 }
+pub fn group_from_compressed_format<G: CurveGroup+ std::convert::From<ark_ec::short_weierstrass::Projective<<G as ark_ec::CurveGroup>::Config>>>(g_str : &str) -> G
+    where <G as CurveGroup>::Config: SWCurveConfig,  <G as CurveGroup>::BaseField: From<BigUint>{
+    let (g_hex_str , is_even) : (&str, bool) = match g_str {
+        s if s.starts_with("0x02") || s.starts_with("0X02") => {
+            (&s[4..], true)
+        },
+        s if s.starts_with("0x03") || s.starts_with("0X03") => {
+            (&s[4..], false)
+        },
+        _ => ("0", false),
+    };
+    //println!("g_hex_str = {} ", g_hex_str);
+    let g_big_int = hex_to_bignum(&g_hex_str).unwrap();
+    let g_x : G::ScalarField = g_big_int.clone().into();
+    let g_affine  =<ark_ec::short_weierstrass::Affine<G::Config>>::get_point_from_x_unchecked(g_big_int.clone().into(), is_even).unwrap();
+    let g = g_affine.into_group();
+    return g.into();
+}
+pub fn group_from_compressed_format_bjj(g_str : &str) -> tlcs_curve_bjj{
+    let (g_hex_str , is_even) : (&str, bool) = match g_str {
+        s if s.starts_with("0x02") || s.starts_with("0X02") => {
+            (&s[4..], true)
+        },
+        s if s.starts_with("0x03") || s.starts_with("0X03") => {
+            (&s[4..], false)
+        },
+        _ => ("0", false),
+    };
+    //println!("g_hex_str = {} ", g_hex_str);
+    let g_big_int = hex_to_bignum(&g_hex_str).unwrap();
+    let g_x : <ark_ec::twisted_edwards::Projective<EdwardsConfig> as Group>::ScalarField = g_big_int.clone().into();
+    let g_affine :affin_bjj  =affin_bjj::get_point_from_x_unchecked(g_big_int.clone().into(), is_even).unwrap();
+    let g = g_affine.into_group();
+    return g.into();
+}
 
 #[allow(unused)]
 pub fn group_to_hex<G: CurveGroup>(g: &G) -> String {
@@ -59,7 +97,9 @@ pub fn group_to_hex<G: CurveGroup>(g: &G) -> String {
     let g_hex = hex::encode(g_bytes);
     g_hex
 }
-
+pub fn hex_to_bignum(hex_str: &str) -> Result<BigUint, ParseBigIntError> {
+    BigUint::from_str_radix(hex_str, 16)
+}
 #[allow(unused)]
 pub fn group_to_byte<G: CurveGroup>(g: &G) -> Vec<u8> {
     // test : NOT DONE
