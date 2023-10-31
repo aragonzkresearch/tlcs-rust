@@ -12,14 +12,7 @@ mod primitives;
 #[cfg(test)]
 mod tests {
     use crate::primitives::*;
-    use ark_bls12_381::{
-        G1Projective as G1Projective_bls,
-        G2Projective as G2Projective_bls,
-        //Bls12_381,
-        //Fr as F_bls,
-        //G1Affine as G1Affine_bls,
-        //G2Affine as G2Affine_bls,
-    };
+    use ark_bls12_381::{G1Projective as G1Projective_bls, G2Projective as G2Projective_bls};
     use ark_bn254::{G1Projective as G1Projective_bn, G2Projective as G2Projective_bn};
     //use ark_ec::{CurveGroup, Group};
     use ark_ec::Group;
@@ -32,9 +25,22 @@ mod tests {
     //use std::fmt;
 
     /// test for baby jubju curve
+    use ark_ed_on_bn254::EdwardsProjective as tlcs_curve;
 
     #[test]
+    fn bjubjub_group_to_hex_1() {
+        for _i in 0..10 {
+            let mut rng = rand::thread_rng();
+            let g = tlcs_curve::rand(&mut rng);
+            let g_str = group_to_hex::<tlcs_curve>(&g);
+            let g_str_backto_group = str_to_group::<tlcs_curve>(&g_str).unwrap();
+            assert_eq!(g, g_str_backto_group);
+        }
+    }
 
+    ///
+
+    #[test]
     fn bn256_group_to_hex_1() {
         for _i in 0..10 {
             let mut rng = rand::thread_rng();
@@ -57,7 +63,6 @@ mod tests {
         }
     }
     /// test for bls group
-
     #[test]
 
     fn bls_group_to_hex_1() {
