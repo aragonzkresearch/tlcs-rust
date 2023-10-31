@@ -6,14 +6,14 @@ use ark_bls12_381::{
     Bls12_381, G1Affine as G1Affine_bls, G1Projective as G1Projective_bls,
     G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
 };
-use num_bigint::{BigUint, ParseBigIntError};
-use num_bigint;
+use num_bigint::BigUint;
+//use num_bigint;
 use num_integer::Integer;
-use ark_ff::BigInteger;
+//use ark_ff::BigInteger;
 
 
 #[allow(unused)]
-use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, EdwardsAffine as affin_bjj,  Fr as Fr_tlcs_bjj};
+use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, EdwardsAffine as affin_bjj,  Fr as Fr_tlcs_bjj, Fq as Fq_tlcs_bjj};
 #[allow(unused)]
 use ark_secp256k1::{Fr as Fr_tlcs_secp, Projective as tlcs_curve_secp};
 
@@ -58,6 +58,8 @@ pub fn verify_keyshare(
 
 #[allow(unused)]
 pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> String{
+    println!("04-01");
+    println!("scheme = {}", scheme);
     match scheme.as_str() {
         "BJJ" => make_public_key_bjj(all_data),
         "SECP256K1" => make_public_key_secp(all_data),
@@ -144,6 +146,7 @@ pub fn verify_keyshare_secp(
 
 #[allow(unused)]
 pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> String {
+    println!("04-02");
     mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data)
 }
 
@@ -203,6 +206,7 @@ fn mpk_aggregation_from_stored_data<E: CurveGroup>(key_shares: &Vec<Vec<u8>>) ->
             .expect("Deserialization should succeed");
         mpk = mpk + key_share.pk;
     }
+    println!(" this is the master pk {}", &mpk);
     let mpk_hex_compressed = group_compressed_format::<E>(&mpk);
     return mpk_hex_compressed;
     /*
@@ -236,8 +240,10 @@ fn msk_aggregation_from_stored_data<E: CurveGroup>(
         msk = msk + sk_0;
         msk = msk + sk_1;
     }
+//    println!("this is the mask {}", &msk);
     let msk_big_int: BigUint = msk.into();
-    let msk_hex = format!("0X{:X} ", msk_big_int);
+    //println!("this is the mask {}", &msk_big_int);
+    let msk_hex = format!("0X{:X}", msk_big_int);
     return msk_hex
     /*
     let mut msk_bytes = Vec::new();
@@ -251,7 +257,8 @@ fn msk_aggregation_from_stored_data<E: CurveGroup>(
 mod tests {
     use super::*;
     use ark_ec::Group;
-    use ark_std::UniformRand;
+    use ark_std::ops::Mul;
+    //use serde::__private::de::Content::String;
 
     // Fastnet
     // retrieved from https://api.drand.sh/dbd506d6ef76e5f386f41c651dcb808c5bcbd75471cc4eafa3f4df7ad4e4c493/public/2
@@ -270,7 +277,7 @@ mod tests {
 
 
 
-    fn group_from_x_bjj(g_str : &str) -> tlcs_curve_bjj {
+    fn group_from_compressed_format_bjj(g_str : &str) -> tlcs_curve_bjj {
         let (g_hex_str , is_even) : (&str, bool) = match g_str {
             s if s.starts_with("0x02") || s.starts_with("0X02") => {
                 (&s[4..], true)
@@ -284,16 +291,12 @@ mod tests {
         let g_x : Fq_tlcs_bjj = g_big_int.into();
         let (x_0 , x_1)  = affin_bjj::get_xs_from_y_unchecked(g_x.clone()).unwrap();
         let x_is_even = x_0.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even();
-        // let g_bignum_0 = BigUint::from_str_radix(x_0.as_str(), 10).unwrap();
-        //let g_compressed = match g_y.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even(){
         let g_y = match is_even ^ x_is_even{
             true  => x_1,
             false => x_0,
         };
         let g : affin_bjj = affin_bjj::new(g_x, g_y);
-
         return g.into();
-
     }
 
 
@@ -331,33 +334,9 @@ mod tests {
             SECURITY_PARAM,
         ));
 
-        let public_key_compressed = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
-        let (g_hex_str , is_even) : (&str, bool) = match public_key_compressed {
-            s if s.starts_with("0x02") || s.starts_with("0X02") => {
-                (&s[4..], true)
-            },
-            s if s.starts_with("0x03") || s.starts_with("0X03") => {
-                (&s[4..], false)
-            },
-            _ => {println!("Error!");
-                  ("0", false)},
-        };
-
-
-
+        let public_key_compressed = make_public_key(SCHEME.to_string(), &all_participant_data);
         let public_key = group_from_compressed_format_bjj(&public_key_compressed);
-        let str_public_key = group_to_hex::<tlcs_curve_bjj>(&public_key);
-
-        let g = tlcs_curve_bjj::generator();
-        let g_str = group_to_hex::<tlcs_curve_bjj>(&g);
-        //assert_eq!(true, false);
-        assert_eq!(str_public_key.len(), g_str.len());
-
-        // assert!(str_public_key.len()==  64);
-        assert!(
-            str_to_group::<tlcs_curve_bjj>(&str_public_key).is_ok(),
-            "Expected Ok, but got Err"
-        );
+        assert!(public_key.into_affine().is_on_curve());
     }
 
     #[test]
@@ -376,24 +355,22 @@ mod tests {
             SECURITY_PARAM,
         ));
 
-        let secret_key = make_secret_key(
+        let secret_key_hex = make_secret_key(
             SCHEME.to_string(),
             SIGNATURE.to_string(),
             all_participant_data,
         );
-        let vec_secret_key = hex::encode(secret_key);
-        let _f = str_to_field::<Fr_tlcs_bjj>(&vec_secret_key);
+        let f_str = &secret_key_hex[2..];
 
-        let mut rng = ark_std::test_rng();
-        let f = Fr_tlcs_bjj::rand(&mut rng);
-        let f_str = field_to_hex::<Fr_tlcs_bjj>(&f);
-        assert_eq!(vec_secret_key.len(), f_str.len());
 
-        //assert!(vec_secret_key.len() == 64);
+        let secret_key_int = hex_to_bignum(&f_str);
+
+        assert!(secret_key_int.is_ok());
     }
 
     #[test]
     fn make_secret_key_works_secp256k1() {
+        println!("start test");
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -408,23 +385,21 @@ mod tests {
             SECURITY_PARAM,
         ));
 
-        let secret_key = make_secret_key(
+        let secret_key_hex  = make_secret_key(
             "SECP256K1".into(),
             SIGNATURE.to_string(),
             all_participant_data,
         );
-        let vec_secret_key = hex::encode(secret_key);
-        let _f = str_to_field::<Fr_tlcs_secp>(&vec_secret_key);
 
-        let mut rng = ark_std::test_rng();
-        let f = Fr_tlcs_secp::rand(&mut rng);
-        let f_str = field_to_hex::<Fr_tlcs_secp>(&f);
-        assert_eq!(vec_secret_key.len(), f_str.len());
+        let f_str = &secret_key_hex[2..];
 
-        //assert!(vec_secret_key.len() == 64);
+        let secret_key_int = hex_to_bignum(&f_str);
+
+        assert!(secret_key_int.is_ok());
+
     }
     #[test]
-    fn mpk_and_msk_are_correct() {
+    fn mpk_and_msk_are_correct_bjj() {
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -438,8 +413,57 @@ mod tests {
             SCHEME.to_string(),
             SECURITY_PARAM,
         ));
-        // TODO: make a test to encrypt/decrypt
+        let msk_str_x = make_secret_key(
+            SCHEME.to_string(),
+            SIGNATURE.to_string(),
+            all_participant_data.clone(),
+        );
+        let msk_str = &msk_str_x[2..];
+        let public_key_compressed = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
+        let mpk = group_from_compressed_format_bjj(&public_key_compressed);
+        let msk_int = hex_to_bignum(&msk_str).unwrap();
+        let msk : Fr_tlcs_bjj = msk_int.into();
+        let gen = tlcs_curve_bjj::generator();
+        assert_eq!( gen.mul(&msk), mpk);
     }
+    #[test]
+    fn mpk_and_msk_are_correct_secp() {
+        let mut all_participant_data: Vec<Vec<u8>> = vec![];
+        all_participant_data.push(make_keyshare(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            "SECP256K1".to_string(),
+            SECURITY_PARAM,
+        ));
+        all_participant_data.push(make_keyshare(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            "SECP256K1".to_string(),
+            SECURITY_PARAM,
+        ));
+        println!("02");
+        let msk_str_x = make_secret_key(
+            "SECP256K1".to_string(),
+            SIGNATURE.to_string(),
+            all_participant_data.clone(),
+        );
+        let msk_str = &msk_str_x[2..];
+        println!("03");
+        let public_key_compressed = make_public_key("SECP256K1".to_string(), &all_participant_data);
+        println!("04");
+        println!("public_key_compressed {}", public_key_compressed);
+
+        let mpk = group_from_compressed::<tlcs_curve_secp>(&public_key_compressed);
+        println!("mpk {}", mpk);
+
+        let msk_int = hex_to_bignum(&msk_str).unwrap();
+        let msk : Fr_tlcs_secp = msk_int.into();
+        println!("msk {}", msk);
+        let gen = tlcs_curve_secp::generator();
+
+        assert_eq!( gen.mul(&msk), mpk);
+    }
+
 
     #[test]
     fn loe_signature_validate_works() {

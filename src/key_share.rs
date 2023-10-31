@@ -270,7 +270,6 @@ mod tests {
     #[test]
 
     fn aggregation_is_correct() {
-        println!("start the test");
         let mut rng = ark_std::test_rng();
         //let mut rng = ark_std::rand::thread_rng();
 
