@@ -101,7 +101,13 @@ pub fn verify_keyshare_bjj(
 
 #[allow(unused)]
 pub fn make_public_key_bjj(all_data: &Vec<Vec<u8>>) -> String {
-    mpk_aggregation_from_stored_data::<tlcs_curve_bjj>(all_data)
+    let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_bjj>(all_data);
+    let mpk_bytes = mpk_str[4..].as_bytes();
+    if mpk_bytes.len()== 63{
+        println!(" 63!");
+        mpk_str.insert(4, '0');
+    }
+    return mpk_str;
 }
 
 #[allow(unused)]
@@ -147,6 +153,7 @@ pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> String {
     let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data);
     let mpk_bytes = mpk_str[4..].as_bytes();
     if mpk_bytes.len()== 63{
+        println!(" 63!");
         mpk_str.insert(4, '0');
     }
     return mpk_str;
