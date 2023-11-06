@@ -144,7 +144,12 @@ pub fn verify_keyshare_secp(
 
 #[allow(unused)]
 pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> String {
-    mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data)
+    let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data);
+    let mpk_bytes = mpk_str[4..].as_bytes();
+    if mpk_bytes.len()== 63{
+        mpk_str.insert(4, '0');
+    }
+    return mpk_str;
 }
 
 #[allow(unused)]
@@ -297,15 +302,6 @@ mod tests {
     }
 
     #[test]
-    fn test_demo(){
-        let pk_st = "0x02d01c24bbb712130f5f20fbb2cbaabe82a605b67bf90d5363a1bfb8ce48d7ab2";
-        let pk = group_from_compressed::<tlcs_curve_secp>(pk_st);
-        //assert!(pk);
-        println!("pk = {}", pk, );
-    }
-
-
-    #[test]
     fn verify_participant_data_works() {
         let participant_data = make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -427,22 +423,18 @@ mod tests {
         let msk_str = &msk_str_x[2..];
         let public_key_compressed = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
         let mpk_bytes = public_key_compressed.as_bytes();
-        println!("mpk as byte =  {:?}", mpk_bytes);
-        println!("mpk as byte len  =  {}", mpk_bytes.len());
-
         let mpk = group_from_compressed_format_bjj(&public_key_compressed);
         let msk_int = hex_to_bignum(&msk_str).unwrap();
         let msk : Fr_tlcs_bjj = msk_int.into();
         let gen = tlcs_curve_bjj::generator();
-
         assert_eq!( gen.mul(&msk), mpk);
         }
     }
     #[test]
     fn mpk_and_msk_are_correct_secp() {
         for i in 0..10{
-            println!(" ");
-            println!(" i: {}", i);
+            //println!(" ");
+            //println!(" i: {}", i);
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -464,25 +456,16 @@ mod tests {
         let msk_str = &msk_str_x[2..];
         let mut public_key_compressed = make_public_key("SECP256K1".to_string(), &all_participant_data);
         let mpk_bytes = public_key_compressed[4..].as_bytes();
-
-        if mpk_bytes.len()== 63{
-            println!("public_key_compressed {}", public_key_compressed);
-            public_key_compressed.insert(4, '0');
-            println!("public_key_compressed {}", public_key_compressed);
-            //println!("mpk as byte =  {:?}", mpk_bytes);
-            //println!("mpk as byte len  =  {}", mpk_bytes.len());
-
-        }
-            let mpk = group_from_compressed::<tlcs_curve_secp>(&public_key_compressed);
-            println!("mpk {}", mpk);
-
-
-            let msk_int = hex_to_bignum(&msk_str).unwrap();
+        let mpk = group_from_compressed::<tlcs_curve_secp>(&public_key_compressed);
+        //println!("mpk {}", mpk);
+        assert_eq!(mpk_bytes.len(), 64);
+        let msk_int = hex_to_bignum(&msk_str).unwrap();
         let msk : Fr_tlcs_secp = msk_int.into();
         //println!("msk {}", msk);
         let gen = tlcs_curve_secp::generator();
 
         assert_eq!( gen.mul(&msk), mpk);
+
     }
     }
 
