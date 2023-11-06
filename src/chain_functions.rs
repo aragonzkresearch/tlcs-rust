@@ -58,8 +58,6 @@ pub fn verify_keyshare(
 
 #[allow(unused)]
 pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> String{
-    println!("04-01");
-    println!("scheme = {}", scheme);
     match scheme.as_str() {
         "BJJ" => make_public_key_bjj(all_data),
         "SECP256K1" => make_public_key_secp(all_data),
@@ -146,8 +144,12 @@ pub fn verify_keyshare_secp(
 
 #[allow(unused)]
 pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> String {
-    println!("04-02");
-    mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data)
+    let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data);
+    let mpk_bytes = mpk_str[4..].as_bytes();
+    if mpk_bytes.len()== 63{
+        mpk_str.insert(4, '0');
+    }
+    return mpk_str;
 }
 
 #[allow(unused)]
@@ -206,7 +208,7 @@ fn mpk_aggregation_from_stored_data<E: CurveGroup>(key_shares: &Vec<Vec<u8>>) ->
             .expect("Deserialization should succeed");
         mpk = mpk + key_share.pk;
     }
-    println!(" this is the master pk {}", &mpk);
+    //println!(" this is the master pk {}", &mpk);
     let mpk_hex_compressed = group_compressed_format::<E>(&mpk);
     return mpk_hex_compressed;
     /*
@@ -299,7 +301,6 @@ mod tests {
         return g.into();
     }
 
-
     #[test]
     fn verify_participant_data_works() {
         let participant_data = make_keyshare(
@@ -370,7 +371,7 @@ mod tests {
 
     #[test]
     fn make_secret_key_works_secp256k1() {
-        println!("start test");
+
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -400,6 +401,7 @@ mod tests {
     }
     #[test]
     fn mpk_and_msk_are_correct_bjj() {
+        for i in 0..10{
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -420,14 +422,19 @@ mod tests {
         );
         let msk_str = &msk_str_x[2..];
         let public_key_compressed = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
+        let mpk_bytes = public_key_compressed.as_bytes();
         let mpk = group_from_compressed_format_bjj(&public_key_compressed);
         let msk_int = hex_to_bignum(&msk_str).unwrap();
         let msk : Fr_tlcs_bjj = msk_int.into();
         let gen = tlcs_curve_bjj::generator();
         assert_eq!( gen.mul(&msk), mpk);
+        }
     }
     #[test]
     fn mpk_and_msk_are_correct_secp() {
+        for i in 0..10{
+            //println!(" ");
+            //println!(" i: {}", i);
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
         all_participant_data.push(make_keyshare(
             LOE_PUBLIC_KEY.into(),
@@ -441,27 +448,25 @@ mod tests {
             "SECP256K1".to_string(),
             SECURITY_PARAM,
         ));
-        println!("02");
         let msk_str_x = make_secret_key(
             "SECP256K1".to_string(),
             SIGNATURE.to_string(),
             all_participant_data.clone(),
         );
         let msk_str = &msk_str_x[2..];
-        println!("03");
-        let public_key_compressed = make_public_key("SECP256K1".to_string(), &all_participant_data);
-        println!("04");
-        println!("public_key_compressed {}", public_key_compressed);
-
+        let mut public_key_compressed = make_public_key("SECP256K1".to_string(), &all_participant_data);
+        let mpk_bytes = public_key_compressed[4..].as_bytes();
         let mpk = group_from_compressed::<tlcs_curve_secp>(&public_key_compressed);
-        println!("mpk {}", mpk);
-
+        //println!("mpk {}", mpk);
+        assert_eq!(mpk_bytes.len(), 64);
         let msk_int = hex_to_bignum(&msk_str).unwrap();
         let msk : Fr_tlcs_secp = msk_int.into();
-        println!("msk {}", msk);
+        //println!("msk {}", msk);
         let gen = tlcs_curve_secp::generator();
 
         assert_eq!( gen.mul(&msk), mpk);
+
+    }
     }
 
 
