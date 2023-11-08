@@ -81,10 +81,8 @@ pub fn make_secret_key(scheme: String, loe_signature: String, all_data: Vec<Vec<
 pub fn make_keyshare_bjj(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
     //let mut rng = ark_std::test_rng();
     let mut rng = ark_std::rand::thread_rng();
-
     type TlcsKeyShare = KeyShare<tlcs_curve_bjj>;
     let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
-
     return key_share_store::<tlcs_curve_bjj>(&key);
 }
 
@@ -103,9 +101,17 @@ pub fn verify_keyshare_bjj(
 pub fn make_public_key_bjj(all_data: &Vec<Vec<u8>>) -> String {
     let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_bjj>(all_data);
     let mpk_bytes = mpk_str[4..].as_bytes();
-    if mpk_bytes.len()== 63{
-        println!(" 63!");
-        mpk_str.insert(4, '0');
+    match mpk_bytes.len() {
+        62 => {
+            mpk_str.insert(4, '0');
+            mpk_str.insert(4, '0');
+        },
+        63 => {
+            //println!(" 63!");
+            mpk_str.insert(4, '0');
+        },
+        64 => (),
+        _ => println!("Error"),
     }
     return mpk_str;
 }
@@ -152,9 +158,17 @@ pub fn verify_keyshare_secp(
 pub fn make_public_key_secp(all_data: &Vec<Vec<u8>>) -> String {
     let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_secp>(all_data);
     let mpk_bytes = mpk_str[4..].as_bytes();
-    if mpk_bytes.len()== 63{
-        println!(" 63!");
-        mpk_str.insert(4, '0');
+    match mpk_bytes.len() {
+        62 => {
+            mpk_str.insert(4, '0');
+            mpk_str.insert(4, '0');
+        },
+        63 => {
+            //println!(" 63!");
+            mpk_str.insert(4, '0');
+        },
+        64 => (),
+        _ => println!("Error"),
     }
     return mpk_str;
 }
