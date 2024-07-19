@@ -7,20 +7,26 @@ use ark_bls12_381::{
     G2Affine as G2Affine_bls, G2Projective as G2Projective_bls,
 };
 use num_bigint::BigUint;
-//use num_bigint;
 use num_integer::Integer;
-//use ark_ff::BigInteger;
-
-
-#[allow(unused)]
-use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, EdwardsAffine as affin_bjj,  Fr as Fr_tlcs_bjj, Fq as Fq_tlcs_bjj};
-#[allow(unused)]
-use ark_secp256k1::{Fr as Fr_tlcs_secp, Projective as tlcs_curve_secp};
 
 use ark_ec::pairing::Pairing;
 use ark_ec::AffineRepr;
 use ark_ec::CurveGroup;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+
+///
+/// To implement the TLCS trait for a specific elliptic curve, follow these steps:
+///
+/// 1. Add the necessary library for the curve to your project.
+/// 2. Ensure the curve has the required representations: `Fr`, `Fq`, `Affine`, and `Projective`.
+/// 3. Implement the `TLCS` trait for the curve by providing implementations for the methods
+///    `make_keyshare`, `make_public_key`, and `make_secret_key`. Use the template provided and
+///    replace the placeholder `TLCS_curve` with your desired curve.
+///
+///
+use ark_secp256k1::{Fr as Fr_tlcs_secp, Projective as tlcs_curve_secp};
+use ark_ed25519::{Fr as Fr_tlcs_edw, Fq as Fq_tlcs_edw, EdwardsProjective as tlcs_curve_edw, EdwardsAffine as affin_edw};
+use ark_ed_on_bn254::{EdwardsProjective as tlcs_curve_bjj, EdwardsAffine as affin_bjj,  Fr as Fr_tlcs_bjj, Fq as Fq_tlcs_bjj};
 
 use ark_std::Zero;
 
@@ -31,15 +37,44 @@ use ark_std::Zero;
 
 //
 // Wrapper functions (temporary)
-//
+
+
+/// Generates a key share based on the provided scheme.
+///
+/// # Arguments
+///
+/// * `pk_loe` - A string representing the public key of the League of Entropy.
+/// * `round` - A 64-bit unsigned integer representing the round number.
+/// * `scheme` - A string representing the cryptographic scheme to be used.
+/// * `sec_param` - A size parameter for security.
+///
+/// # Returns
+///
+/// A vector of bytes representing the generated key share.
+
 #[allow(unused)]
 pub fn make_keyshare(pk_loe: String, round: u64, scheme: String, sec_param: usize) -> Vec<u8> {
     match scheme.as_str() {
         "BJJ" => make_keyshare_bjj(pk_loe, round, scheme, sec_param),
         "SECP256K1" => make_keyshare_secp(pk_loe, round, scheme, sec_param),
+        "EDWARDS" => make_keyshare_edw(pk_loe, round, scheme, sec_param),
         &_ => make_keyshare_bjj(pk_loe, round, scheme, sec_param),
     }
 }
+
+/// Verifies a key share based on the provided scheme.
+///
+/// # Arguments
+///
+/// * `pk_loe` - A string representing the public key of the League of Entropy.
+/// * `round` - A 64-bit unsigned integer representing the round number.
+/// * `scheme` - A string representing the cryptographic scheme to be used.
+/// * `data` - A vector of bytes representing the key share data to be verified.
+/// * `sec_param` - A size parameter for security.
+///
+/// # Returns
+///
+/// A boolean indicating whether the key share is valid.
 
 #[allow(unused)]
 pub fn verify_keyshare(
@@ -52,24 +87,50 @@ pub fn verify_keyshare(
     match scheme.as_str() {
         "BJJ" => verify_keyshare_bjj(pk_loe, round, scheme, data, sec_param),
         "SECP256K1" => verify_keyshare_secp(pk_loe, round, scheme, data, sec_param),
+        "EDWARDS" => verify_keyshare_edw(pk_loe, round, scheme, data, sec_param),
         &_ => verify_keyshare_bjj(pk_loe, round, scheme, data, sec_param),
     }
 }
+
+/// Generates a public key based on the provided scheme and data.
+///
+/// # Arguments
+///
+/// * `scheme` - A string representing the cryptographic scheme to be used.
+/// * `all_data` - A reference to a vector of vectors of bytes representing all key share data.
+///
+/// # Returns
+///
+/// A string representing the generated public key.
 
 #[allow(unused)]
 pub fn make_public_key(scheme: String, all_data: &Vec<Vec<u8>>) -> String{
     match scheme.as_str() {
         "BJJ" => make_public_key_bjj(all_data),
         "SECP256K1" => make_public_key_secp(all_data),
+        "EDWARDS" => make_public_key_edw(all_data),
         &_ => make_public_key_bjj(all_data),
     }
 }
+
+/// Generates a secret key based on the provided scheme, signature, and data.
+///
+/// # Arguments
+///
+/// * `scheme` - A string representing the cryptographic scheme to be used.
+/// * `loe_signature` - A string representing the League of Entropy signature.
+/// * `all_data` - A vector of vectors of bytes representing all key share data.
+///
+/// # Returns
+///
+/// A string representing the generated secret key.
 
 #[allow(unused)]
 pub fn make_secret_key(scheme: String, loe_signature: String, all_data: Vec<Vec<u8>>) ->String {
     match scheme.as_str() {
         "BJJ" => make_secret_key_bjj(loe_signature, all_data),
         "SECP256K1" => make_secret_key_secp(loe_signature, all_data),
+        "EDWARDS" => make_secret_key_edw(loe_signature, all_data),
         &_ => make_secret_key_bjj(loe_signature, all_data),
     }
 }
@@ -124,6 +185,59 @@ pub fn make_secret_key_bjj(loe_signature: String, all_data: Vec<Vec<u8>>) -> Str
     msk_aggregation_from_stored_data::<tlcs_curve_bjj>(&sk_t, &all_data)
 }
 
+//
+// ******************* //
+// Edwards Curve functions//
+
+#[allow(unused)]
+pub fn make_keyshare_edw(pk_loe: String, round: u64, _scheme: String, sec_param: usize) -> Vec<u8> {
+    //let mut rng = ark_std::test_rng();
+    let mut rng = ark_std::rand::thread_rng();
+    type TlcsKeyShare = KeyShare<tlcs_curve_edw>;
+    let key = TlcsKeyShare::key_share_gen(&mut rng, &pk_loe, round, sec_param);
+    return key_share_store::<tlcs_curve_edw>(&key);
+}
+
+#[allow(unused)]
+pub fn verify_keyshare_edw(
+    pk_loe: String,
+    round: u64,
+    _scheme: String,
+    data: Vec<u8>,
+    sec_param: usize,
+) -> bool {
+    return verify_key_share_store::<tlcs_curve_edw>(pk_loe.into(), data, round, sec_param);
+}
+
+#[allow(unused)]
+pub fn make_public_key_edw(all_data: &Vec<Vec<u8>>) -> String {
+    let mut mpk_str = mpk_aggregation_from_stored_data::<tlcs_curve_edw>(all_data);
+    let mpk_bytes = mpk_str[4..].as_bytes();
+    match mpk_bytes.len() {
+        62 => {
+            mpk_str.insert(4, '0');
+            mpk_str.insert(4, '0');
+        },
+        63 => {
+            //println!(" 63!");
+            mpk_str.insert(4, '0');
+        },
+        64 => (),
+        _ => println!("Error"),
+    }
+    return mpk_str;
+}
+
+#[allow(unused)]
+pub fn make_secret_key_edw(loe_signature: String, all_data: Vec<Vec<u8>>) -> String{
+    let sk_t = str_to_group::<G1Projective_bls>(&loe_signature)
+        .unwrap()
+        .into_affine();
+    msk_aggregation_from_stored_data::<tlcs_curve_edw>(&sk_t, &all_data)
+}
+
+
+// ****************** //
 //
 // SECP256K1 functions
 //
@@ -289,7 +403,7 @@ mod tests {
     //const SIGNATURE: &str = "9544ddce2fdbe8688d6f5b4f98eed5d63eee3902e7e162050ac0f45905a55657714880adabe3c3096b92767d886567d0";
     // Quicknet
     // retrieved from https://api.drand.sh/52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971/info
-    const LOE_PUBLIC_KEY: &str = "83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a";
+   const LOE_PUBLIC_KEY: &str = "83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a";
    const SIGNATURE: &str = "b6b6a585449b66eb12e875b64fcbab3799861a00e4dbf092d99e969a5eac57dd3f798acf61e705fe4f093db926626807"; // For testing
 
     //const SIGNATURE: &str = "b55e7cb2d5c613ee0b2e28d6750aabbb78c39dcc96bd9d38c2c2e12198df95571de8e8e402a0cc48871c7089a2b3af4b"; // For testing
@@ -321,6 +435,29 @@ mod tests {
         let g : affin_bjj = affin_bjj::new(g_x, g_y);
         return g.into();
     }
+    // ****
+    fn group_from_compressed_format_edw(g_str : &str) -> tlcs_curve_edw {
+        let (g_hex_str , is_even) : (&str, bool) = match g_str {
+            s if s.starts_with("0x02") || s.starts_with("0X02") => {
+                (&s[4..], true)
+            },
+            s if s.starts_with("0x03") || s.starts_with("0X03") => {
+                (&s[4..], false)
+            },
+            _ => ("0", false),
+        };
+        let g_big_int = hex_to_bignum(&g_hex_str).unwrap();
+        let g_x : Fq_tlcs_edw = g_big_int.into();
+        let (x_0 , x_1)  = affin_edw::get_xs_from_y_unchecked(g_x.clone()).unwrap();
+        let x_is_even = x_0.to_string().chars().last().unwrap().to_digit(10).unwrap().is_even();
+        let g_y = match is_even ^ x_is_even{
+            true  => x_1,
+            false => x_0,
+        };
+        let g : affin_edw = affin_edw::new(g_x, g_y);
+        return g.into();
+    }
+    // ****
 
     #[test]
     fn verify_participant_data_works() {
@@ -391,6 +528,37 @@ mod tests {
     }
 
     #[test]
+    fn make_secret_key_works_edw() {
+        let mut all_participant_data: Vec<Vec<u8>> = vec![];
+        all_participant_data.push(make_keyshare(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            SCHEME.to_string(),
+            SECURITY_PARAM,
+        ));
+        all_participant_data.push(make_keyshare(
+            LOE_PUBLIC_KEY.into(),
+            ROUND,
+            SCHEME.to_string(),
+            SECURITY_PARAM,
+        ));
+
+        let secret_key_hex = make_secret_key(
+            SCHEME.to_string(),
+            SIGNATURE.to_string(),
+            all_participant_data,
+        );
+        let f_str = &secret_key_hex[2..];
+
+
+        let secret_key_int = hex_to_bignum(&f_str);
+
+        assert!(secret_key_int.is_ok());
+    }
+
+
+
+    #[test]
     fn make_secret_key_works_secp256k1() {
 
         let mut all_participant_data: Vec<Vec<u8>> = vec![];
@@ -451,6 +619,39 @@ mod tests {
         assert_eq!( gen.mul(&msk), mpk);
         }
     }
+
+    #[test]
+    fn mpk_and_msk_are_correct_edw() {
+        for i in 0..10{
+            let mut all_participant_data: Vec<Vec<u8>> = vec![];
+            all_participant_data.push(make_keyshare(
+                LOE_PUBLIC_KEY.into(),
+                ROUND,
+                SCHEME.to_string(),
+                SECURITY_PARAM,
+            ));
+            all_participant_data.push(make_keyshare(
+                LOE_PUBLIC_KEY.into(),
+                ROUND,
+                SCHEME.to_string(),
+                SECURITY_PARAM,
+            ));
+            let msk_str_x = make_secret_key(
+                SCHEME.to_string(),
+                SIGNATURE.to_string(),
+                all_participant_data.clone(),
+            );
+            let msk_str = &msk_str_x[2..];
+            let public_key_compressed = make_public_key(LOE_PUBLIC_KEY.into(), &all_participant_data);
+            let mpk_bytes = public_key_compressed.as_bytes();
+            let mpk = group_from_compressed_format_bjj(&public_key_compressed);
+            let msk_int = hex_to_bignum(&msk_str).unwrap();
+            let msk : Fr_tlcs_bjj = msk_int.into();
+            let gen = tlcs_curve_bjj::generator();
+            assert_eq!( gen.mul(&msk), mpk);
+        }
+    }
+
     #[test]
     fn mpk_and_msk_are_correct_secp() {
         for i in 0..10{
@@ -489,8 +690,6 @@ mod tests {
 
     }
     }
-
-
     #[test]
     fn loe_signature_validate_works() {
         assert!(loe_signature_is_valid(
