@@ -36,6 +36,7 @@ ark-ed-on-bn254 = "0.4.0"
 
 num-traits = "0.2.15"
 num-integer = "0.1.45"
+ark-ed25519 = "0.4.0"
 
 
 
